@@ -1,5 +1,5 @@
 ### Introduction 
-`wal2mongo` is a PostgreSQL logical decoding output plugin designed to make the logical replication easier from PostgreSQL to MongoDB by formating the output to a JSON-like format accepted by mongo.
+`wal2mongo` is a PostgreSQL logical decoding output plugin designed to make the logical replication easier from `PostgreSQL` to `MongoDB` by formating the output to a JSON-like format accepted by `mongo`.
 
 ### Prerequisites
 PostgreSQL 12.x
@@ -30,7 +30,7 @@ Make sure set the right PATH to use existing `pg_config`
 $ export PATH=/path/to/postgres/bin:$PATH
 USE_PGXS=1 make
 USE_PGXS=1 make install
-USE_PGXS=1 make check
+USE_PGXS=1 make installcheck
 ```
 
 ### Setup and configuration
