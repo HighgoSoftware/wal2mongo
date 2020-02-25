@@ -8,24 +8,24 @@ PostgreSQL 12.x
 `wal2mongo` is designed to support two typical ways for building PostgreSQL extension: one is for developers who want to manage `wal2mongo` source code under PostgreSQL source code tree structure; the other one is for developers or DBA who want to integrate `wal2mongo` to existing PostgreSQL binaries.
 
 ### Build under PostgreSQL source code tree
-cd /path/to/postgres/contrib/
+```cd /path/to/postgres/contrib/
 git clone https://github.com/HighgoSoftware/wal2mongo.git
 cd wal2mongo
 make
 make install
-make check
+make check```
 
 ### Build against PostgreSQL binary install
-mkdir sandbox
+```mkdir sandbox
 cd sandbox
 git clone https://github.com/HighgoSoftware/wal2mongo.git
-cd wal2mongo
+cd wal2mongo```
 
 Make sure set the right PATH to use existing `pg_config`
-$ export PATH=/path/to/postgres/bin:$PATH
+```$ export PATH=/path/to/postgres/bin:$PATH
 USE_PGXS=1 make
 USE_PGXS=1 make install
-USE_PGXS=1 make check
+USE_PGXS=1 make check```
 
 ### Setup and configuration
 Edit PostgreSQl configuration file `postgresql.conf` and make sure `wal_level` is set to `logical`, and `max_replication_slots` is set at least 1 (default settings is 10).
