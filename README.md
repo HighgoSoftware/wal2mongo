@@ -41,7 +41,7 @@ Restart postgres services.
 TBD...
 
 ### Examples
-Here are two simple ways to test `wal2mongo`.
+Below are two simple ways to replicate data from PostgreSQL to MongoDB using `wal2mongo`: one use psql console; the other one use pg_recvlogical tools.
 
 #### using psql
 * Create a slot 
@@ -96,6 +96,7 @@ postgres=# SELECT * FROM pg_logical_slot_get_changes('w2m_slot', NULL, NULL);
 ```
 
 * Replicate data within mongo console (option 1)
+
 log into mongoDB, and copy all the strings from data section, and paste to mongo console
 ```
 > db.books.insertOne( { id:123, title:"HG-PGSQL1.1", author:"Highgo" } )
@@ -106,6 +107,7 @@ log into mongoDB, and copy all the strings from data section, and paste to mongo
 ```
 
 * Replicate data using .js file (option 2)
+
 copy all the strings from data section, and paste it to a file, e.g. test.js, then import the file using mongo
 ```
 $ mongo < test.js 
@@ -166,6 +168,7 @@ values
 ```
 
 * Check the changes by switching back to terminal 1
+
 one record like below will be showing up or inside file test2.js,
 ```
 db.books.insertOne( { id:124, title:"HG-PGSQL1.2", author:"Highgo" } )
