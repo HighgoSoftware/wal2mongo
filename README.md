@@ -44,7 +44,7 @@ TBD...
 Here are two simple ways to test `wal2mongo`.
 
 #### using psql
-##### Create a slot 
+* Create a slot 
 For example, create a slot nameed 'w2m_slot' using the output plugin `wal2mongo`.
 ```
 postgres=# SELECT * FROM pg_create_logical_replication_slot('w2m_slot', 'wal2mongo');
@@ -54,7 +54,7 @@ postgres=# SELECT * FROM pg_create_logical_replication_slot('w2m_slot', 'wal2mon
 (1 row)
 ```
 
-##### Check the slot just created
+* Check the slot just created
 ```
 postgres=# SELECT slot_name, plugin, slot_type, database, active, restart_lsn, confirmed_flush_lsn FROM pg_replication_slots;
  slot_name |  plugin   | slot_type | database | active | restart_lsn | confirmed_flush_lsn 
@@ -63,7 +63,7 @@ postgres=# SELECT slot_name, plugin, slot_type, database, active, restart_lsn, c
 (1 row)
 ```
 
-##### Create a table and insert data
+* Create a table and insert data
 ```
 postgres=# CREATE TABLE books (
   id  	 SERIAL PRIMARY KEY,
@@ -77,7 +77,7 @@ values
 (123, 'HG-PGSQL1.1', 'Highgo');
 ```
 
-##### Peek if any changes
+* Peek if any changes
 ```
 postgres=# SELECT * FROM pg_logical_slot_peek_changes('w2m_slot', NULL, NULL);
     lsn     | xid  |                                  data                                  
@@ -86,7 +86,7 @@ postgres=# SELECT * FROM pg_logical_slot_peek_changes('w2m_slot', NULL, NULL);
 (1 row)
 ```
 
-##### Retrieve the changes
+* Retrieve the changes
 ```
 postgres=# SELECT * FROM pg_logical_slot_get_changes('w2m_slot', NULL, NULL);
     lsn     | xid  |                                  data                                  
@@ -95,7 +95,7 @@ postgres=# SELECT * FROM pg_logical_slot_get_changes('w2m_slot', NULL, NULL);
 (1 row)
 ```
 
-##### Replicate data within mongo console (option 1)
+* Replicate data within mongo console (option 1)
 log into mongoDB, and copy all the strings from data section, and paste to mongo console
 ```
 > db.books.insertOne( { id:123, title:"HG-PGSQL1.1", author:"Highgo" } )
@@ -105,7 +105,7 @@ log into mongoDB, and copy all the strings from data section, and paste to mongo
 }
 ```
 
-##### Replicate data using .js file (option 2)
+* Replicate data using .js file (option 2)
 copy all the strings from data section, and paste it to a file, e.g. test.js, then import the file using mongo
 ```
 $ mongo < test.js 
@@ -120,14 +120,14 @@ MongoDB server version: 4.0.16
 bye
 ```
 
-##### check the data replicated
+* check the data replicated
 ```
 > db.books.find();
 { "_id" : ObjectId("5e5ea8f3bb2265ca8fa4b7ae"), "id" : 123, "title" : "HG-PGSQL1.1", "author" : "Highgo" }
 > 
 ```
 
-##### Drop a slot if not used any more
+* Drop a slot if not used any more
 ```
 postgres=# SELECT pg_drop_replication_slot('w2m_slot');
  pg_drop_replication_slot 
@@ -137,12 +137,12 @@ postgres=# SELECT pg_drop_replication_slot('w2m_slot');
 ```
 
 #### using pg_recvlogical
-##### create a slot
+* create a slot
 ```
 $ pg_recvlogical -d postgres --slot w2m_slot2 --create-slot --plugin=wal2mongo
 ```
 
-##### start logical decoding stream on terminal 1
+* start logical decoding stream on terminal 1
 ```
 $ pg_recvlogical -d postgres --slot w2m_slot2 --start -f -
 ```
@@ -151,7 +151,7 @@ or let pg_recvlogical record all the changes to a file, e.g.
 $ pg_recvlogical -d postgres --slot w2m_slot2 --start -f test2.js
 ```
 
-##### Create a table and insert data from terminal 2
+* Create a table and insert data from terminal 2
 ```
 postgres=# CREATE TABLE books (
   id  	 SERIAL PRIMARY KEY,
@@ -165,15 +165,15 @@ values
 (124, 'HG-PGSQL1.2', 'Highgo');
 ```
 
-##### Check the changes by switching back to terminal 1
+* Check the changes by switching back to terminal 1
 one record like below will be showing up or inside file test2.js,
 ```
 db.books.insertOne( { id:124, title:"HG-PGSQL1.2", author:"Highgo" } )
 ```
 
-##### replcate data to mongoDB same as above
+* replcate data to mongoDB same as above
 
-##### Drop a slot if not used any more
+* Drop a slot if not used any more
 ```
 $ pg_recvlogical -d postgres --slot w2m_slot2 --drop-slot 
 ```
