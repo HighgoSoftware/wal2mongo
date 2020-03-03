@@ -108,7 +108,7 @@ log into mongoDB, and copy all the strings from data section, and paste to mongo
 
 * Replicate data using .js file (option 2)
 
-copy all the strings from data section, and paste it to a file, e.g. test.js, then import the file using mongo
+Copy all the strings from data section, and paste it to a file, e.g. test.js, then import the file using mongo
 ```
 $ mongo < test.js 
 MongoDB shell version v4.0.16
@@ -148,7 +148,7 @@ $ pg_recvlogical -d postgres --slot w2m_slot2 --create-slot --plugin=wal2mongo
 ```
 $ pg_recvlogical -d postgres --slot w2m_slot2 --start -f -
 ```
-or let pg_recvlogical record all the changes to a file, e.g. 
+Or let pg_recvlogical record all the changes to a file, e.g. 
 ```
 $ pg_recvlogical -d postgres --slot w2m_slot2 --start -f test2.js
 ```
@@ -169,7 +169,7 @@ values
 
 * Check the changes by switching back to terminal 1
 
-one record like below will be showing up or inside file test2.js,
+One record like below should be showing up either in console or inside file test2.js,
 ```
 db.books.insertOne( { id:124, title:"HG-PGSQL1.2", author:"Highgo" } )
 ```
