@@ -40,11 +40,11 @@ typedef struct
 typedef struct
 {
 	MemoryContext context;
-	bool		include_xids;
 	bool		include_timestamp;
 	bool		skip_empty_xacts;
 	bool		xact_wrote_changes;
 	bool		only_local;
+	bool 		use_transaction;
 	Wal2MongoAction	actions;
 } Wal2MongoData;
 
@@ -76,6 +76,9 @@ static void pg_w2m_decode_message(LogicalDecodingContext *ctx,
 							  	  ReorderBufferTXN *txn, XLogRecPtr message_lsn,
 								  bool transactional, const char *prefix,
 								  Size sz, const char *message);
+
+static bool split_string_to_list(char *rawstring, char separator, List **sl);
+
 
 /* Will be called immediately after loaded */
 void
@@ -113,10 +116,15 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 	data->context = AllocSetContextCreate(ctx->context,
 										  "wal2mongo context",
 										  ALLOCSET_DEFAULT_SIZES);
-	data->include_xids = true;
 	data->include_timestamp = false;
 	data->skip_empty_xacts = false;
 	data->only_local = false;
+	data->use_transaction = false;
+
+	data->actions.delete = true;
+	data->actions.insert = true;
+	data->actions.update = true;
+	data->actions.truncate = true;
 
 	ctx->output_plugin_private = data;
 
@@ -125,7 +133,119 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 
 	foreach(option, ctx->output_plugin_options)
 	{
+		DefElem *elem = lfirst(option);
+		Assert(elem->arg == NULL || IsA(elem->arg, String));
+		if (strcmp(elem->defname, "include_timestamp") == 0)
+		{
+			/* if option value is NULL then assume that value is false */
+			if (elem->arg == NULL)
+				data->include_timestamp = false;
+			else if (!parse_bool(strVal(elem->arg), &data->include_timestamp))
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
+							 strVal(elem->arg), elem->defname)));
+		}
+		else if (strcmp(elem->defname, "skip_empty_xacts") == 0)
+		{
+			/* if option value is NULL then assume that value is false */
+			if (elem->arg == NULL)
+				data->skip_empty_xacts = false;
+			else if (!parse_bool(strVal(elem->arg), &data->skip_empty_xacts))
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
+							 strVal(elem->arg), elem->defname)));
+		}
+		else if (strcmp(elem->defname, "only_local") == 0)
+		{
+			/* if option value is NULL then assume that value is false */
+			if (elem->arg == NULL)
+				data->only_local = false;
+			else if (!parse_bool(strVal(elem->arg), &data->only_local))
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
+							 strVal(elem->arg), elem->defname)));
+		}
+		else if (strcmp(elem->defname, "use_transaction") == 0)
+		{
+			/* if option value is NULL then assume that value is false */
+			if (elem->arg == NULL)
+				data->use_transaction = false;
+			else if (!parse_bool(strVal(elem->arg), &data->use_transaction))
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
+							 strVal(elem->arg), elem->defname)));
+		}
+		else if (strcmp(elem->defname, "force-binary") == 0)
+		{
+			bool		force_binary;
 
+			if (elem->arg == NULL)
+				continue;
+			else if (!parse_bool(strVal(elem->arg), &force_binary))
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
+								strVal(elem->arg), elem->defname)));
+
+			if (force_binary)
+				opt->output_type = OUTPUT_PLUGIN_BINARY_OUTPUT;
+		}
+		else if (strcmp(elem->defname, "actions") == 0)
+		{
+			char	*rawstr;
+
+			if (elem->arg == NULL)
+			{
+				elog(DEBUG1, "actions argument is null");
+				/* argument null means default; nothing to do here */
+			}
+			else
+			{
+				List		*selected_actions = NIL;
+				ListCell	*lc;
+
+				rawstr = pstrdup(strVal(elem->arg));
+				if (!split_string_to_list(rawstr, ',', &selected_actions))
+				{
+					pfree(rawstr);
+					ereport(ERROR,
+							(errcode(ERRCODE_INVALID_NAME),
+							 errmsg("could not parse value \"%s\" for parameter \"%s\"",
+								 strVal(elem->arg), elem->defname)));
+				}
+
+				data->actions.insert = false;
+				data->actions.update = false;
+				data->actions.delete = false;
+				data->actions.truncate = false;
+
+				foreach(lc, selected_actions)
+				{
+					char *p = lfirst(lc);
+
+					if (strcmp(p, "insert") == 0)
+						data->actions.insert = true;
+					else if (strcmp(p, "update") == 0)
+						data->actions.update = true;
+					else if (strcmp(p, "delete") == 0)
+						data->actions.delete = true;
+					else if (strcmp(p, "truncate") == 0)
+						data->actions.truncate = true;
+					else
+						ereport(ERROR,
+								(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+								 errmsg("could not parse value \"%s\" for parameter \"%s\"",
+									 p, elem->defname)));
+				}
+
+				pfree(rawstr);
+				list_free(selected_actions);
+			}
+		}
 	}
 }
 
@@ -376,4 +496,66 @@ pg_w2m_decode_message(LogicalDecodingContext *ctx,
 					  const char *prefix, Size sz, const char *message)
 {
 
+}
+
+static bool
+split_string_to_list(char *rawstring, char separator, List **sl)
+{
+	char	   *nextp;
+	bool		done = false;
+
+	nextp = rawstring;
+
+	while (isspace(*nextp))
+		nextp++;				/* skip leading whitespace */
+
+	if (*nextp == '\0')
+		return true;			/* allow empty string */
+
+	/* At the top of the loop, we are at start of a new identifier. */
+	do
+	{
+		char	   *curname;
+		char	   *endp;
+		char	   *pname;
+
+		curname = nextp;
+		while (*nextp && *nextp != separator && !isspace(*nextp))
+		{
+			if (*nextp == '\\')
+				nextp++;	/* ignore next character because of escape */
+			nextp++;
+		}
+		endp = nextp;
+		if (curname == nextp)
+			return false;	/* empty unquoted name not allowed */
+
+		while (isspace(*nextp))
+			nextp++;			/* skip trailing whitespace */
+
+		if (*nextp == separator)
+		{
+			nextp++;
+			while (isspace(*nextp))
+				nextp++;		/* skip leading whitespace for next */
+			/* we expect another name, so done remains false */
+		}
+		else if (*nextp == '\0')
+			done = true;
+		else
+			return false;		/* invalid syntax */
+
+		/* Now safe to overwrite separator with a null */
+		*endp = '\0';
+
+		/*
+		 * Finished isolating current name --- add it to list
+		 */
+		pname = pstrdup(curname);
+		*sl = lappend(*sl, pname);
+
+		/* Loop back if we didn't reach end of string */
+	} while (!done);
+
+	return true;
 }
