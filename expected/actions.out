@@ -10,53 +10,104 @@ SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mo
 -- actions
 CREATE TABLE testing (a integer primary key);
 INSERT INTO testing (a) VALUES(200);
-UPDATE actions SET a = 500 WHERE a = 200;
-ERROR:  relation "actions" does not exist at character 8
-DELETE FROM actions WHERE a = 500;
-ERROR:  relation "actions" does not exist at character 13
-TRUNCATE TABLE actions;
-ERROR:  relation "actions" does not exist
+UPDATE testing SET a = 500 WHERE a = 200;
+DELETE FROM testing WHERE a = 500;
+TRUNCATE TABLE testing;
 -- peek changes according to action configuration
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'insert');
-               data                
------------------------------------
+                              data                              
+----------------------------------------------------------------
  db.testing.insertOne( { a:200 } )
-(1 row)
+ db.testing UPDATE: old-key: { a:200 } ) new-tuple: { a:500 } )
+ db.testing DELETE: { a:500 } )
+(3 rows)
 
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'update');
-               data                
------------------------------------
+                              data                              
+----------------------------------------------------------------
  db.testing.insertOne( { a:200 } )
-(1 row)
+ db.testing UPDATE: old-key: { a:200 } ) new-tuple: { a:500 } )
+ db.testing DELETE: { a:500 } )
+(3 rows)
 
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'delete');
-               data                
------------------------------------
+                              data                              
+----------------------------------------------------------------
  db.testing.insertOne( { a:200 } )
-(1 row)
+ db.testing UPDATE: old-key: { a:200 } ) new-tuple: { a:500 } )
+ db.testing DELETE: { a:500 } )
+(3 rows)
 
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'truncate');
-               data                
------------------------------------
+                              data                              
+----------------------------------------------------------------
  db.testing.insertOne( { a:200 } )
-(1 row)
+ db.testing UPDATE: old-key: { a:200 } ) new-tuple: { a:500 } )
+ db.testing DELETE: { a:500 } )
+(3 rows)
 
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'insert, update, delete, truncate');
-               data                
------------------------------------
+                              data                              
+----------------------------------------------------------------
  db.testing.insertOne( { a:200 } )
-(1 row)
+ db.testing UPDATE: old-key: { a:200 } ) new-tuple: { a:500 } )
+ db.testing DELETE: { a:500 } )
+(3 rows)
 
 -- peek changes with default action configuraiton
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL);
-               data                
------------------------------------
+                              data                              
+----------------------------------------------------------------
  db.testing.insertOne( { a:200 } )
-(1 row)
+ db.testing UPDATE: old-key: { a:200 } ) new-tuple: { a:500 } )
+ db.testing DELETE: { a:500 } )
+(3 rows)
+
+-- peek changes with several configuration parameter combinations
+SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'include_cluster_name', 'true');
+                              data                              
+----------------------------------------------------------------
+ db.testing.insertOne( { a:200 } )
+ db.testing UPDATE: old-key: { a:200 } ) new-tuple: { a:500 } )
+ db.testing DELETE: { a:500 } )
+(3 rows)
+
+SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'include_timestamp', 'true');
+                              data                              
+----------------------------------------------------------------
+ db.testing.insertOne( { a:200 } )
+ db.testing UPDATE: old-key: { a:200 } ) new-tuple: { a:500 } )
+ db.testing DELETE: { a:500 } )
+(3 rows)
+
+SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'skip_empty_xacts', 'true');
+                              data                              
+----------------------------------------------------------------
+ db.testing.insertOne( { a:200 } )
+ db.testing UPDATE: old-key: { a:200 } ) new-tuple: { a:500 } )
+ db.testing DELETE: { a:500 } )
+(3 rows)
+
+SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'only_local', 'true');
+                              data                              
+----------------------------------------------------------------
+ db.testing.insertOne( { a:200 } )
+ db.testing UPDATE: old-key: { a:200 } ) new-tuple: { a:500 } )
+ db.testing DELETE: { a:500 } )
+(3 rows)
+
+SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'use_transaction', 'true');
+                              data                              
+----------------------------------------------------------------
+ db.testing.insertOne( { a:200 } )
+ db.testing UPDATE: old-key: { a:200 } ) new-tuple: { a:500 } )
+ db.testing DELETE: { a:500 } )
+(3 rows)
 
 -- peek changes with invalid actions
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'insert, xxx, delete, xxx');
 ERROR:  could not parse value "xxx" for parameter "actions"
+DROP TABLE testing;
 SELECT 'end' FROM pg_drop_replication_slot('regression_slot');
  ?column? 
 ----------

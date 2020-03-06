@@ -22,6 +22,7 @@
 #include "utils/lsyscache.h"
 #include "utils/memutils.h"
 #include "utils/rel.h"
+#include "utils/guc.h"
 
 PG_MODULE_MAGIC;
 
@@ -45,6 +46,8 @@ typedef struct
 	bool		xact_wrote_changes;
 	bool		only_local;
 	bool 		use_transaction;
+	bool		include_cluster_name;
+
 	Wal2MongoAction	actions;
 } Wal2MongoData;
 
@@ -120,6 +123,7 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 	data->skip_empty_xacts = false;
 	data->only_local = false;
 	data->use_transaction = false;
+	data->include_cluster_name = false;
 
 	data->actions.delete = true;
 	data->actions.insert = true;
@@ -179,7 +183,7 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
 							 strVal(elem->arg), elem->defname)));
 		}
-		else if (strcmp(elem->defname, "force-binary") == 0)
+		else if (strcmp(elem->defname, "force_binary") == 0)
 		{
 			bool		force_binary;
 
@@ -193,6 +197,17 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 
 			if (force_binary)
 				opt->output_type = OUTPUT_PLUGIN_BINARY_OUTPUT;
+		}
+		else if (strcmp(elem->defname, "include_cluster_name") == 0)
+		{
+			/* if option value is NULL then assume that value is false */
+			if (elem->arg == NULL)
+				data->include_cluster_name = false;
+			else if (!parse_bool(strVal(elem->arg), &data->include_cluster_name))
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
+							 strVal(elem->arg), elem->defname)));
 		}
 		else if (strcmp(elem->defname, "actions") == 0)
 		{
@@ -245,6 +260,14 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 				pfree(rawstr);
 				list_free(selected_actions);
 			}
+		}
+		else
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("option \"%s\" = \"%s\" is unknown",
+							elem->defname,
+							elem->arg ? strVal(elem->arg) : "(null)")));
 		}
 	}
 }
