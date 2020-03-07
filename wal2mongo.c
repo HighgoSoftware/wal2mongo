@@ -422,7 +422,7 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 			print_w2m_literal(s, typid, OidOutputFunctionCall(typoutput, val));
 		}
 		if ( natt == tupdesc->natts -1 )
-			appendStringInfoString(s, " } )");
+			appendStringInfoString(s, " }");
 	}
 }
 
@@ -465,24 +465,26 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.newtuple->tuple,
 									false);
+			appendStringInfoString(ctx->out, " )");
 			break;
 		case REORDER_BUFFER_CHANGE_UPDATE:
-			appendStringInfoString(ctx->out, " UPDATE:");
+			appendStringInfoString(ctx->out, ".updateOne(");
 			if (change->data.tp.oldtuple != NULL)
 			{
-				appendStringInfoString(ctx->out, " old-key:");
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.oldtuple->tuple,
 									true);
-				appendStringInfoString(ctx->out, " new-tuple:");
 			}
 
-			if (change->data.tp.newtuple == NULL)
-				appendStringInfoString(ctx->out, " (no-tuple-data)");
-			else
+			if (change->data.tp.newtuple != NULL)
+			{
+				appendStringInfoString(ctx->out, ", \{ $set: ");
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.newtuple->tuple,
 									false);
+				appendStringInfoString(ctx->out, " }");
+			}
+			appendStringInfoString(ctx->out, " )");
 			break;
 		case REORDER_BUFFER_CHANGE_DELETE:
 			appendStringInfoString(ctx->out, " DELETE:");
