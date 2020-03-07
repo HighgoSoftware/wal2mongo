@@ -487,8 +487,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 			appendStringInfoString(ctx->out, " )");
 			break;
 		case REORDER_BUFFER_CHANGE_DELETE:
-			appendStringInfoString(ctx->out, " DELETE:");
-
+			appendStringInfoString(ctx->out, ".deleteOne(");
 			/* if there was no PK, we only know that a delete happened */
 			if (change->data.tp.oldtuple == NULL)
 				appendStringInfoString(ctx->out, " (no-tuple-data)");
@@ -497,6 +496,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.oldtuple->tuple,
 									true);
+			appendStringInfoString(ctx->out, " )");
 			break;
 		default:
 			Assert(false);
