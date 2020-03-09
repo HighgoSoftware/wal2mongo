@@ -421,7 +421,7 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 			val = PointerGetDatum(PG_DETOAST_DATUM(origval));
 			print_w2m_literal(s, typid, OidOutputFunctionCall(typoutput, val));
 		}
-		if ( natt == tupdesc->natts -1 )
+		if ( natt + 1 == tupdesc->natts )
 			appendStringInfoString(s, " }");
 	}
 }
@@ -473,7 +473,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 			{
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.oldtuple->tuple,
-									true);
+									false);
 			}
 
 			if (change->data.tp.newtuple != NULL)
