@@ -123,7 +123,7 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 	data->skip_empty_xacts = false;
 	data->only_local = false;
 	data->use_transaction = false;
-	data->include_cluster_name = false;
+	data->include_cluster_name = true;
 
 	data->actions.delete = true;
 	data->actions.insert = true;
@@ -357,6 +357,7 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 {
 	int			natt;
 
+	appendStringInfoString(s, " \{ ");
 	/* print all columns individually */
 	for (natt = 0; natt < tupdesc->natts; natt++)
 	{
@@ -392,19 +393,17 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 			continue;
 
 		/* print attribute name */
-		if ( natt == 0 )
-			appendStringInfoString(s, " \{ ");
-		else
+		if ( natt != 0 )
 			appendStringInfoString(s, ", ");
 
 		appendStringInfoString(s, quote_identifier(NameStr(attr->attname)));
 
+		/* print separator */
+		appendStringInfoChar(s, ':');
+
 		/* query output function */
 		getTypeOutputInfo(typid,
 						  &typoutput, &typisvarlena);
-
-		/* print separator */
-		appendStringInfoChar(s, ':');
 
 		/* print data */
 		if (isnull)
@@ -421,9 +420,8 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 			val = PointerGetDatum(PG_DETOAST_DATUM(origval));
 			print_w2m_literal(s, typid, OidOutputFunctionCall(typoutput, val));
 		}
-		if ( natt + 1 == tupdesc->natts )
-			appendStringInfoString(s, " }");
 	}
+	appendStringInfoString(s, " }");
 }
 
 /*
@@ -449,6 +447,12 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	old = MemoryContextSwitchTo(data->context);
 
 	OutputPluginPrepareWrite(ctx, true);
+	if (data->include_cluster_name )
+	{
+		appendStringInfoString(ctx->out, "use ");
+		appendStringInfoString(ctx->out, cluster_name);
+		appendStringInfoString(ctx->out, "; \n");
+	}
 
 	appendStringInfoString(ctx->out,
 						   quote_qualified_identifier("db", class_form->relrewrite ?
@@ -464,7 +468,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 			else
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.newtuple->tuple,
-									false);
+									true);
 			appendStringInfoString(ctx->out, " )");
 			break;
 		case REORDER_BUFFER_CHANGE_UPDATE:
@@ -473,7 +477,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 			{
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.oldtuple->tuple,
-									false);
+									true);
 			}
 
 			if (change->data.tp.newtuple != NULL)
