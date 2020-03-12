@@ -2,7 +2,9 @@
 `wal2mongo` is a PostgreSQL logical decoding output plugin designed to make the logical replication easier from `PostgreSQL` to `MongoDB` by formating the output to a JSON-like format accepted by `mongo`.
 
 ### Prerequisites
-PostgreSQL 12.x
+To use wal2mongo logical decoding output plugin, either one of below PostgreSQL servers need to be installed,
+* [PostgreSQL 12.x](https://www.postgresql.org/download)
+* [HighGo PostgreSQL Server 1.x](https://www.highgo.ca/products/highgo-postgresql-server)
 
 ### Build, test and install
 `wal2mongo` is designed to support two typical ways for building PostgreSQL extension: one is for developers who want to manage `wal2mongo` source code under PostgreSQL source code tree structure; the other one is for developers or DBA who want to integrate `wal2mongo` to existing PostgreSQL binaries.
