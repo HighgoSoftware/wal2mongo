@@ -32,7 +32,7 @@ Make sure set the right PATH to use existing `pg_config`
 $ export PATH=/path/to/postgres/bin:$PATH
 USE_PGXS=1 make
 USE_PGXS=1 make install
-USE_PGXS=1 make installcheck
+USE_PGXS=1 make installcheck-force
 ```
 
 ### Setup and configuration
