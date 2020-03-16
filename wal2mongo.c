@@ -447,7 +447,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	old = MemoryContextSwitchTo(data->context);
 
 	OutputPluginPrepareWrite(ctx, true);
-	if (ctx->slot->data.name.data)
+	if (ctx->slot->data.name.data[0] != '\0')
 	{
 		appendStringInfoString(ctx->out, "use ");
 		appendStringInfoString(ctx->out, ctx->slot->data.name.data);
