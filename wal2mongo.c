@@ -447,10 +447,10 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	old = MemoryContextSwitchTo(data->context);
 
 	OutputPluginPrepareWrite(ctx, true);
-	if (data->include_cluster_name )
+	if (ctx->slot->data.name.data)
 	{
 		appendStringInfoString(ctx->out, "use ");
-		appendStringInfoString(ctx->out, cluster_name);
+		appendStringInfoString(ctx->out, ctx->slot->data.name.data);
 		appendStringInfoString(ctx->out, "; \n");
 	}
 
