@@ -29,7 +29,7 @@ COMMIT;
 
 -- peek and get changes with and without transaction mode
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'use_transaction', 'true', 'regress', 'true');
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'use_transaction', 'false');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'use_transaction', 'false', 'regress', 'true');
 
 DROP TABLE testing;
 SELECT 'end' FROM pg_drop_replication_slot('regression_slot');

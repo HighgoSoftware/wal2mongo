@@ -17,7 +17,7 @@
 
 #include "replication/logical.h"
 #include "replication/origin.h"
-
+#include "commands/dbcommands.h"
 #include "utils/builtins.h"
 #include "utils/lsyscache.h"
 #include "utils/memutils.h"
@@ -306,13 +306,13 @@ pg_w2m_decode_begin_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn)
 
 	/* first write the session variable for Mongo */
 	OutputPluginPrepareWrite(ctx, false);
-	appendStringInfo(ctx->out, "session%u%s = db.getMongo().startSession()",
+	appendStringInfo(ctx->out, "session%u%s = db.getMongo().startSession();",
 			data->regress == true? 0 : txn->xid, ctx->slot->data.name.data);
 	OutputPluginWrite(ctx, false);
 
 	/* then write transaction start */
 	OutputPluginPrepareWrite(ctx, true);
-	appendStringInfo(ctx->out, "session%u%s.startTransaction()",
+	appendStringInfo(ctx->out, "session%u%s.startTransaction();",
 			data->regress == true? 0 : txn->xid, ctx->slot->data.name.data);
 	OutputPluginWrite(ctx, true);
 }
@@ -330,13 +330,13 @@ pg_w2m_decode_commit_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 
 	/* first write the commit transaction cmd */
 	OutputPluginPrepareWrite(ctx, false);
-	appendStringInfo(ctx->out, "session%u%s.commitTransaction()",
+	appendStringInfo(ctx->out, "session%u%s.commitTransaction();",
 			data->regress == true? 0 : txn->xid, ctx->slot->data.name.data);
 	OutputPluginWrite(ctx, false);
 
 	/* then write session termination */
 	OutputPluginPrepareWrite(ctx, true);
-	appendStringInfo(ctx->out, "session%u%s.endSession()",
+	appendStringInfo(ctx->out, "session%u%s.endSession();",
 			data->regress == true? 0 : txn->xid, ctx->slot->data.name.data);
 	OutputPluginWrite(ctx, true);
 }
@@ -492,18 +492,35 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 
 	/* write the db switch command */
 	OutputPluginPrepareWrite(ctx, false);
-	if (ctx->slot->data.name.data[0] != '\0')
-		appendStringInfo(ctx->out, "use %s", ctx->slot->data.name.data);
 
+	/* Here we are concatenating ClusterName, DatabaseName, and SlotName to form
+	 * a unified database name in MongoDB's perspective, so Mongo knows the changes
+	 * are streamed from which cluster, which database and via which slot
+	 *
+	 * TODO: we will introduce more configurable options to fine-tune this output style
+	 * behaviors.
+	 */
+	if(data->include_cluster_name)
+	{
+		appendStringInfo(ctx->out, "use %s_%s_%s;",
+						data->regress == true ? "mycluster" :
+								(cluster_name == NULL ? "mycluster" : cluster_name),
+						get_database_name(relation->rd_node.dbNode),
+						ctx->slot->data.name.data[0] == '\0' ? "myslot" : ctx->slot->data.name.data);
+	}
+	else
+	{
+		appendStringInfo(ctx->out, "use %s_%s;",
+						get_database_name(relation->rd_node.dbNode),
+						ctx->slot->data.name.data[0] == '\0' ? "myslot" : ctx->slot->data.name.data);
+	}
 	OutputPluginWrite(ctx, false);
 
 	OutputPluginPrepareWrite(ctx, true);
-
 	appendStringInfoString(ctx->out,
 						   quote_qualified_identifier("db", class_form->relrewrite ?
 													  get_rel_name(class_form->relrewrite) :
 													  NameStr(class_form->relname)));
-
 	switch (change->action)
 	{
 		case REORDER_BUFFER_CHANGE_INSERT:
@@ -514,7 +531,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.newtuple->tuple,
 									true);
-			appendStringInfoString(ctx->out, " )");
+			appendStringInfoString(ctx->out, " );");
 			break;
 		case REORDER_BUFFER_CHANGE_UPDATE:
 			appendStringInfoString(ctx->out, ".updateOne(");
@@ -533,7 +550,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 									false);
 				appendStringInfoString(ctx->out, " }");
 			}
-			appendStringInfoString(ctx->out, " )");
+			appendStringInfoString(ctx->out, " );");
 			break;
 		case REORDER_BUFFER_CHANGE_DELETE:
 			appendStringInfoString(ctx->out, ".deleteOne(");
@@ -545,7 +562,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.oldtuple->tuple,
 									true);
-			appendStringInfoString(ctx->out, " )");
+			appendStringInfoString(ctx->out, " );");
 			break;
 		default:
 			Assert(false);
