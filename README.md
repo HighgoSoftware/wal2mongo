@@ -6,10 +6,10 @@ To use wal2mongo logical decoding output plugin, either one of below PostgreSQL 
 * [PostgreSQL 12.x](https://www.postgresql.org/download)
 * [HighGo PostgreSQL Server 1.x](https://www.highgo.ca/products/highgo-postgresql-server)
 
-### Build, test and install
+### Build, Test and Install
 `wal2mongo` is designed to support two typical ways for building PostgreSQL extension: one is for developers who want to manage `wal2mongo` source code under PostgreSQL source code tree structure; the other one is for developers or DBA who want to integrate `wal2mongo` to existing PostgreSQL binaries.
 
-### Build under PostgreSQL source code tree
+#### Build under PostgreSQL Source Code Tree
 ```
 cd /path/to/postgres/contrib/
 git clone https://github.com/HighgoSoftware/wal2mongo.git
@@ -19,7 +19,7 @@ make install
 make check
 ```
 
-### Build against PostgreSQL binary install
+#### Build against PostgreSQL Binary Install
 ```
 mkdir sandbox
 cd sandbox
@@ -27,7 +27,7 @@ git clone https://github.com/HighgoSoftware/wal2mongo.git
 cd wal2mongo
 ```
 
-Make sure set the right PATH to use existing `pg_config`
+Set the `PATH` to point to existing PostgreSQL binary directory. Use `PGHOST` and `PGPORT` to specify a PostgreSQL server and port to run the installcheck-force test against if different from default ones.
 ```
 $ export PATH=/path/to/postgres/bin:$PATH
 USE_PGXS=1 make

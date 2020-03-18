@@ -47,7 +47,7 @@ typedef struct
 	bool		only_local;
 	bool 		use_transaction;
 	bool		include_cluster_name;
-
+	bool		regress;
 	Wal2MongoAction	actions;
 } Wal2MongoData;
 
@@ -124,6 +124,7 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 	data->only_local = false;
 	data->use_transaction = false;
 	data->include_cluster_name = true;
+	data->regress = false;
 
 	data->actions.delete = true;
 	data->actions.insert = true;
@@ -209,6 +210,17 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
 							 strVal(elem->arg), elem->defname)));
 		}
+		else if (strcmp(elem->defname, "regress") == 0)
+		{
+			/* if option value is NULL then assume that value is false */
+			if (elem->arg == NULL)
+				data->regress = false;
+			else if (!parse_bool(strVal(elem->arg), &data->regress))
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
+							 strVal(elem->arg), elem->defname)));
+		}
 		else if (strcmp(elem->defname, "actions") == 0)
 		{
 			char	*rawstr;
@@ -286,7 +298,23 @@ pg_w2m_decode_shutdown(LogicalDecodingContext *ctx)
 static void
 pg_w2m_decode_begin_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn)
 {
+	Wal2MongoData *data = ctx->output_plugin_private;
 
+	/* Skip this callback if transaction mode is not enabled */
+	if(!data->use_transaction)
+		return;
+
+	/* first write the session variable for Mongo */
+	OutputPluginPrepareWrite(ctx, false);
+	appendStringInfo(ctx->out, "session%u%s = db.getMongo().startSession()",
+			data->regress == true? 0 : txn->xid, ctx->slot->data.name.data);
+	OutputPluginWrite(ctx, false);
+
+	/* then write transaction start */
+	OutputPluginPrepareWrite(ctx, true);
+	appendStringInfo(ctx->out, "session%u%s.startTransaction()",
+			data->regress == true? 0 : txn->xid, ctx->slot->data.name.data);
+	OutputPluginWrite(ctx, true);
 }
 
 /* COMMIT callback */
@@ -294,7 +322,23 @@ static void
 pg_w2m_decode_commit_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 					 	 XLogRecPtr commit_lsn)
 {
+	Wal2MongoData *data = ctx->output_plugin_private;
 
+	/* Skip this callback if transaction mode is not enabled */
+	if(!data->use_transaction)
+		return;
+
+	/* first write the commit transaction cmd */
+	OutputPluginPrepareWrite(ctx, false);
+	appendStringInfo(ctx->out, "session%u%s.commitTransaction()",
+			data->regress == true? 0 : txn->xid, ctx->slot->data.name.data);
+	OutputPluginWrite(ctx, false);
+
+	/* then write session termination */
+	OutputPluginPrepareWrite(ctx, true);
+	appendStringInfo(ctx->out, "session%u%s.endSession()",
+			data->regress == true? 0 : txn->xid, ctx->slot->data.name.data);
+	OutputPluginWrite(ctx, true);
 }
 
 /* Generic message callback */
@@ -446,13 +490,14 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	/* Avoid leaking memory by using and resetting our own context */
 	old = MemoryContextSwitchTo(data->context);
 
-	OutputPluginPrepareWrite(ctx, true);
+	/* write the db switch command */
+	OutputPluginPrepareWrite(ctx, false);
 	if (ctx->slot->data.name.data[0] != '\0')
-	{
-		appendStringInfoString(ctx->out, "use ");
-		appendStringInfoString(ctx->out, ctx->slot->data.name.data);
-		appendStringInfoString(ctx->out, "; \n");
-	}
+		appendStringInfo(ctx->out, "use %s", ctx->slot->data.name.data);
+
+	OutputPluginWrite(ctx, false);
+
+	OutputPluginPrepareWrite(ctx, true);
 
 	appendStringInfoString(ctx->out,
 						   quote_qualified_identifier("db", class_form->relrewrite ?

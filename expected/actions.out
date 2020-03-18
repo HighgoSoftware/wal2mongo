@@ -17,125 +17,145 @@ TRUNCATE TABLE testing;
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'insert');
                           data                           
 ---------------------------------------------------------
- use regression_slot;                                   +
+ use regression_slot
  db.testing.insertOne( { a:200 } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.deleteOne( { a:500 } )
-(3 rows)
+(6 rows)
 
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'update');
                           data                           
 ---------------------------------------------------------
- use regression_slot;                                   +
+ use regression_slot
  db.testing.insertOne( { a:200 } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.deleteOne( { a:500 } )
-(3 rows)
+(6 rows)
 
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'delete');
                           data                           
 ---------------------------------------------------------
- use regression_slot;                                   +
+ use regression_slot
  db.testing.insertOne( { a:200 } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.deleteOne( { a:500 } )
-(3 rows)
+(6 rows)
 
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'truncate');
                           data                           
 ---------------------------------------------------------
- use regression_slot;                                   +
+ use regression_slot
  db.testing.insertOne( { a:200 } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.deleteOne( { a:500 } )
-(3 rows)
+(6 rows)
 
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'insert, update, delete, truncate');
                           data                           
 ---------------------------------------------------------
- use regression_slot;                                   +
+ use regression_slot
  db.testing.insertOne( { a:200 } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.deleteOne( { a:500 } )
-(3 rows)
+(6 rows)
 
 -- peek changes with default action configuraiton
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL);
                           data                           
 ---------------------------------------------------------
- use regression_slot;                                   +
+ use regression_slot
  db.testing.insertOne( { a:200 } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.deleteOne( { a:500 } )
-(3 rows)
+(6 rows)
 
 -- peek changes with several configuration parameter combinations
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'include_cluster_name', 'true');
                           data                           
 ---------------------------------------------------------
- use regression_slot;                                   +
+ use regression_slot
  db.testing.insertOne( { a:200 } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.deleteOne( { a:500 } )
-(3 rows)
+(6 rows)
 
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'include_timestamp', 'true');
                           data                           
 ---------------------------------------------------------
- use regression_slot;                                   +
+ use regression_slot
  db.testing.insertOne( { a:200 } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.deleteOne( { a:500 } )
-(3 rows)
+(6 rows)
 
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'skip_empty_xacts', 'true');
                           data                           
 ---------------------------------------------------------
- use regression_slot;                                   +
+ use regression_slot
  db.testing.insertOne( { a:200 } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.deleteOne( { a:500 } )
-(3 rows)
+(6 rows)
 
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'only_local', 'true');
                           data                           
 ---------------------------------------------------------
- use regression_slot;                                   +
+ use regression_slot
  db.testing.insertOne( { a:200 } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } )
- use regression_slot;                                   +
+ use regression_slot
  db.testing.deleteOne( { a:500 } )
-(3 rows)
+(6 rows)
 
-SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'use_transaction', 'true');
+SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'use_transaction', 'true', 'regress', 'true');
                           data                           
 ---------------------------------------------------------
- use regression_slot;                                   +
+ session0regression_slot = db.getMongo().startSession()
+ session0regression_slot.startTransaction()
+ session0regression_slot.commitTransaction()
+ session0regression_slot.endSession()
+ session0regression_slot = db.getMongo().startSession()
+ session0regression_slot.startTransaction()
+ use regression_slot
  db.testing.insertOne( { a:200 } )
- use regression_slot;                                   +
+ session0regression_slot.commitTransaction()
+ session0regression_slot.endSession()
+ session0regression_slot = db.getMongo().startSession()
+ session0regression_slot.startTransaction()
+ use regression_slot
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } )
- use regression_slot;                                   +
+ session0regression_slot.commitTransaction()
+ session0regression_slot.endSession()
+ session0regression_slot = db.getMongo().startSession()
+ session0regression_slot.startTransaction()
+ use regression_slot
  db.testing.deleteOne( { a:500 } )
-(3 rows)
+ session0regression_slot.commitTransaction()
+ session0regression_slot.endSession()
+ session0regression_slot = db.getMongo().startSession()
+ session0regression_slot.startTransaction()
+ session0regression_slot.commitTransaction()
+ session0regression_slot.endSession()
+(26 rows)
 
 -- peek changes with invalid actions
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'insert, xxx, delete, xxx');
