@@ -502,17 +502,22 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	 */
 	if(data->include_cluster_name)
 	{
-		appendStringInfo(ctx->out, "use %s_%s_%s;",
-						data->regress == true ? "mycluster" :
-								(cluster_name == NULL ? "mycluster" : cluster_name),
-						get_database_name(relation->rd_node.dbNode),
-						ctx->slot->data.name.data[0] == '\0' ? "myslot" : ctx->slot->data.name.data);
+		appendStringInfo(ctx->out, "use %s_%s;",
+//		appendStringInfo(ctx->out, "use %s_%s_%s;",
+						cluster_name[0] == '\0' ? "mycluster" : cluster_name,
+//						data->regress == true ? "regression" :
+//								get_database_name(relation->rd_node.dbNode),
+						ctx->slot->data.name.data[0] == '\0' ? "myslot" :
+								ctx->slot->data.name.data);
 	}
 	else
 	{
-		appendStringInfo(ctx->out, "use %s_%s;",
-						get_database_name(relation->rd_node.dbNode),
-						ctx->slot->data.name.data[0] == '\0' ? "myslot" : ctx->slot->data.name.data);
+		appendStringInfo(ctx->out, "use %s;",
+//		appendStringInfo(ctx->out, "use %s_%s;",
+//						data->regress == true ? "regression" :
+//								get_database_name(relation->rd_node.dbNode),
+						ctx->slot->data.name.data[0] == '\0' ? "myslot" :
+								ctx->slot->data.name.data);
 	}
 	OutputPluginWrite(ctx, false);
 
