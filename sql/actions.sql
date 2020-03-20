@@ -20,7 +20,7 @@ SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'ac
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'insert, update, delete, truncate', 'regress', 'true');
 
 -- peek changes with default action configuraiton
-SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL);
+SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'regress', 'true');
 
 -- peek changes with several configuration parameter combinations
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'include_cluster_name', 'true', 'regress', 'true');
