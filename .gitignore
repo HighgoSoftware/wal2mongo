@@ -1,3 +1,8 @@
+# regressio test outputs
+/regression.diffs
+/regression.out
+/results/
+
 # Prerequisites
 *.d
 
@@ -30,7 +35,6 @@
 
 # Executables
 *.exe
-*.out
 *.app
 *.i*86
 *.x86_64

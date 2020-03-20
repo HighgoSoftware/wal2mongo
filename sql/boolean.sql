@@ -125,10 +125,10 @@ TRUNCATE TABLE tbl_boolean;
 
 
 -- peek changes according to action configuration
-SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL);
+SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'regress', 'true');
 
 -- get changes according to action configuration
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL);
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'regress', 'true');
 
 -- peek changes with invalid actions
 
