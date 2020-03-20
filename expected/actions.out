@@ -70,14 +70,14 @@ SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'ac
 (6 rows)
 
 -- peek changes with default action configuraiton
-SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL);
+SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'regress', 'true');
                            data                           
 ----------------------------------------------------------
- use master_regression_regression_slot;
+ use mycluster_mydb_regression_slot;
  db.testing.insertOne( { a:200 } );
- use master_regression_regression_slot;
+ use mycluster_mydb_regression_slot;
  db.testing.updateOne( { a:200 }, { $set:  { a:500 } } );
- use master_regression_regression_slot;
+ use mycluster_mydb_regression_slot;
  db.testing.deleteOne( { a:500 } );
 (6 rows)
 
