@@ -1,0 +1,68 @@
+\set VERBOSITY terse
+-- predictability
+SET synchronous_commit = on;
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mongo');
+ ?column? 
+----------
+ init
+(1 row)
+
+-- create table with different numeric type
+CREATE TABLE tbl_int(id serial primary key, a smallint, b integer, c serial, d real, e bigint, f bigserial, g double precision, h decimal, i numeric);
+-- minumum values
+INSERT INTO tbl_int values(1, -32768, -2147483648, 1, -0.123456, -9223372036854775808, 1, -1.123456789123456, -1234567890.1234567891, -9876543210.0987654321);
+UPDATE tbl_int SET a=a+1, b=b+1, c=c+1, d=d+1, e=e+1, f=f+1, g=g+1, h=h+1, i=i+1 WHERE id=1;
+DELETE FROM tbl_int WHERE id = 1;
+TRUNCATE TABLE tbl_boolean;
+ERROR:  relation "tbl_boolean" does not exist
+-- maximum values
+INSERT INTO tbl_int values(1, 32767, 2147483647, 2147483647, 0.123456, 9223372036854775807, 9223372036854775807, 1.123456789123456, 1234567890.1234567891, 9876543210.0987654321);
+UPDATE tbl_int SET a=a-1, b=b-1, c=c-1, d=d-1, e=e-1, f=f-1, g=g-1, h=h-1, i=i-1 WHERE id=1;
+DELETE FROM tbl_int WHERE id = 1;
+TRUNCATE TABLE tbl_boolean;
+ERROR:  relation "tbl_boolean" does not exist
+-- peek changes according to action configuration
+SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'regress', 'true');
+                                                                                                                                                                                           data                                                                                                                                                                                            
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.insertOne( { id: NumberInt("1"), a: NumberInt("-32768"), b: NumberInt("-2147483648"), c: NumberInt("1"), d:-0.123456, e: NumberLong("-9223372036854775808"), f: NumberLong("1"), g: NumberDecimal("-1.123456789123456"), h: NumberDecimal("-1234567890.1234567891"), i: NumberDecimal("-9876543210.0987654321") } );
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.updateOne( { id: NumberInt("1") }, { $set:  { id: NumberInt("1"), a: NumberInt("-32767"), b: NumberInt("-2147483647"), c: NumberInt("2"), d:0.876544, e: NumberLong("-9223372036854775807"), f: NumberLong("2"), g: NumberDecimal("-0.12345678912345592"), h: NumberDecimal("-1234567889.1234567891"), i: NumberDecimal("-9876543209.0987654321") } } );
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.deleteOne( { id: NumberInt("1") } );
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.insertOne( { id: NumberInt("1"), a: NumberInt("32767"), b: NumberInt("2147483647"), c: NumberInt("2147483647"), d:0.123456, e: NumberLong("9223372036854775807"), f: NumberLong("9223372036854775807"), g: NumberDecimal("1.123456789123456"), h: NumberDecimal("1234567890.1234567891"), i: NumberDecimal("9876543210.0987654321") } );
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.updateOne( { id: NumberInt("1") }, { $set:  { id: NumberInt("1"), a: NumberInt("32766"), b: NumberInt("2147483646"), c: NumberInt("2147483646"), d:-0.876544, e: NumberLong("9223372036854775806"), f: NumberLong("9223372036854775806"), g: NumberDecimal("0.12345678912345592"), h: NumberDecimal("1234567889.1234567891"), i: NumberDecimal("9876543209.0987654321") } } );
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.deleteOne( { id: NumberInt("1") } );
+(12 rows)
+
+-- get changes according to action configuration
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'regress', 'true');
+                                                                                                                                                                                           data                                                                                                                                                                                            
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.insertOne( { id: NumberInt("1"), a: NumberInt("-32768"), b: NumberInt("-2147483648"), c: NumberInt("1"), d:-0.123456, e: NumberLong("-9223372036854775808"), f: NumberLong("1"), g: NumberDecimal("-1.123456789123456"), h: NumberDecimal("-1234567890.1234567891"), i: NumberDecimal("-9876543210.0987654321") } );
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.updateOne( { id: NumberInt("1") }, { $set:  { id: NumberInt("1"), a: NumberInt("-32767"), b: NumberInt("-2147483647"), c: NumberInt("2"), d:0.876544, e: NumberLong("-9223372036854775807"), f: NumberLong("2"), g: NumberDecimal("-0.12345678912345592"), h: NumberDecimal("-1234567889.1234567891"), i: NumberDecimal("-9876543209.0987654321") } } );
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.deleteOne( { id: NumberInt("1") } );
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.insertOne( { id: NumberInt("1"), a: NumberInt("32767"), b: NumberInt("2147483647"), c: NumberInt("2147483647"), d:0.123456, e: NumberLong("9223372036854775807"), f: NumberLong("9223372036854775807"), g: NumberDecimal("1.123456789123456"), h: NumberDecimal("1234567890.1234567891"), i: NumberDecimal("9876543210.0987654321") } );
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.updateOne( { id: NumberInt("1") }, { $set:  { id: NumberInt("1"), a: NumberInt("32766"), b: NumberInt("2147483646"), c: NumberInt("2147483646"), d:-0.876544, e: NumberLong("9223372036854775806"), f: NumberLong("9223372036854775806"), g: NumberDecimal("0.12345678912345592"), h: NumberDecimal("1234567889.1234567891"), i: NumberDecimal("9876543209.0987654321") } } );
+ use mycluster_mydb_regression_slot;
+ db.tbl_int.deleteOne( { id: NumberInt("1") } );
+(12 rows)
+
+-- peek changes with invalid actions
+DROP TABLE tbl_boolean;
+ERROR:  table "tbl_boolean" does not exist
+SELECT 'end' FROM pg_drop_replication_slot('regression_slot');
+ ?column? 
+----------
+ end
+(1 row)
+
