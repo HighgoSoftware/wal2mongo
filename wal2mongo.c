@@ -359,13 +359,21 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 	{
 		case INT2OID:
 		case INT4OID:
+			appendStringInfo(s, " NumberInt(\"%s\")", outputstr);
+			break;
+
+		case FLOAT4OID:
+			appendStringInfoString(s, outputstr);
+			break;
+
 		case INT8OID:
 		case OIDOID:
-		case FLOAT4OID:
+			appendStringInfo(s, " NumberLong(\"%s\")", outputstr);
+			break;
+
 		case FLOAT8OID:
 		case NUMERICOID:
-			/* NB: We don't care about Inf, NaN et al. */
-			appendStringInfoString(s, outputstr);
+			appendStringInfo(s, " NumberDecimal(\"%s\")", outputstr);
 			break;
 
 		case BITOID:
