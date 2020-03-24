@@ -388,6 +388,21 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 				appendStringInfoString(s, "false");
 			break;
 
+		case UUIDOID:
+			appendStringInfo(s, " UUID(\"%s\")", outputstr);
+			break;
+
+		case BYTEAOID:
+			appendStringInfo(s, " HexData(0, \"");
+			for (valptr = outputstr+2; *valptr; valptr++)
+			{
+				char		ch = *valptr;
+				appendStringInfoChar(s, ch);
+			}
+			appendStringInfo(s, "\")");
+
+			break;
+
 		default:
 			appendStringInfoChar(s, '\"');
 			for (valptr = outputstr; *valptr; valptr++)
