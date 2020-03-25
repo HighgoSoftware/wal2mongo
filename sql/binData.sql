@@ -8,8 +8,8 @@ SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mo
 -- UUID
 CREATE TABLE tbl_uuid ( id serial PRIMARY KEY, a_uuid UUID NOT NULL );
 INSERT INTO tbl_uuid (a_uuid) VALUES('47deacb1-3ad0-4a0e-8254-9ad3f589c9f3') ;
-UPDATE tbl_bin SET a_uuid = 'e7d8e462-12cc-49dc-aac2-2b5dccdabeda' WHERE id=1;
-DELETE FROM tbl_bin WHERE id = 1;
+UPDATE tbl_uuid SET a_uuid = 'e7d8e462-12cc-49dc-aac2-2b5dccdabeda' WHERE id=1;
+DELETE FROM tbl_uuid WHERE id = 1;
 TRUNCATE TABLE tbl_uuid;
 
 -- BYTEA

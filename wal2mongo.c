@@ -388,6 +388,10 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 				appendStringInfoString(s, "false");
 			break;
 
+		case TIMESTAMPTZOID:
+			appendStringInfo(s, " ISODate(\"%s\")", outputstr);
+			break;
+
 		case UUIDOID:
 			appendStringInfo(s, " UUID(\"%s\")", outputstr);
 			break;
