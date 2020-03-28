@@ -404,14 +404,62 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 				appendStringInfoChar(s, ch);
 			}
 			appendStringInfo(s, "\")");
+			break;
 
+		case INT4ARRAYOID:
+		case FLOAT4ARRAYOID:
+			for (valptr = outputstr; *valptr; valptr++)
+			{
+				char ch = *valptr;
+				if(ch == '{')
+					appendStringInfoChar(s, '[');
+				else if(ch == ',')
+					appendStringInfoChar(s, ',');
+				else if(ch == '}')
+					appendStringInfoChar(s, ']');
+				else
+				{
+					if (SQL_STR_DOUBLE(ch, false))
+						appendStringInfoChar(s, ch);
+					appendStringInfoChar(s, ch);
+				}
+			}
+			break;
+
+		case TEXTARRAYOID:
+		case 1015:
+			for (valptr = outputstr; *valptr; valptr++)
+			{
+				char ch = *valptr;
+				if(ch == '{')
+					if(*(valptr+1) == '{' || *(valptr+1) == '"')
+						appendStringInfoChar(s, '[');
+					else
+						appendStringInfo(s, "[\"");
+				else if(ch == ',')
+					if(*(valptr+1) == '{' || *(valptr+1) == '"')
+						appendStringInfoChar(s, ',');
+					else
+						appendStringInfo(s, "\",\"");
+				else if(ch == '}')
+					if(*(valptr-1) != '}' && *(valptr-1) != '"')
+						appendStringInfo(s, "\"]");
+					else
+						appendStringInfoChar(s, ']');
+				else
+				{
+					if (SQL_STR_DOUBLE(ch, false))
+						appendStringInfoChar(s, ch);
+					appendStringInfoChar(s, ch);
+				}
+			}
 			break;
 
 		default:
 			appendStringInfoChar(s, '\"');
 			for (valptr = outputstr; *valptr; valptr++)
 			{
-				char		ch = *valptr;
+				char ch = *valptr;
 
 				if (SQL_STR_DOUBLE(ch, false))
 					appendStringInfoChar(s, ch);
