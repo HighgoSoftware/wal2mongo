@@ -406,8 +406,32 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			appendStringInfo(s, "\")");
 			break;
 
+		/* Array data type */
+		case BOOLARRAYOID:
+			for (valptr = outputstr; *valptr; valptr++)
+			{
+				char ch = *valptr;
+				if(ch == '{')
+					appendStringInfoChar(s, '[');
+				else if(ch == ',')
+					appendStringInfoChar(s, ',');
+				else if(ch == '}')
+					appendStringInfoChar(s, ']');
+				else
+				{
+					if (strcmp(&ch, "t") == 0)
+						appendStringInfoString(s, "true");
+					else
+						appendStringInfoString(s, "false");
+				}
+			}
+			break;
+
+		case INT2ARRAYOID:
 		case INT4ARRAYOID:
+		case INT8ARRAYOID:
 		case FLOAT4ARRAYOID:
+		case FLOAT8ARRAYOID:
 			for (valptr = outputstr; *valptr; valptr++)
 			{
 				char ch = *valptr;
@@ -426,8 +450,84 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			}
 			break;
 
+		case BYTEAARRAYOID:
+			//{"\\xdeadbeef","\\xc001c00f"} =>
+			//[HexData(0,"deadbeef"),HexData(0,"c001c00f")]
+			for (valptr = outputstr; *valptr; valptr++)
+			{
+				char ch = *valptr;
+				if(ch == '{')
+					appendStringInfo(s, "[HexData(0,");
+				else if(ch == ',')
+					appendStringInfo(s, "),HexData(0,");
+				else if(ch == '}')
+					appendStringInfo(s, ")]");
+				else
+				{
+					if(ch == '\\')
+						valptr+=2;
+					else
+						appendStringInfoChar(s, ch);
+				}
+			}
+			break;
+
+		case TIMESTAMPTZARRAYOID:
+			//{"2020-03-30 10:18:40.12-07","2020-03-30 20:28:40.12-07"} =>
+			//[ISODate("2020-03-30 10:18:40.12-07"),ISODate("2020-03-30 20:28:40.12-07")]
+			for (valptr = outputstr; *valptr; valptr++)
+			{
+				char ch = *valptr;
+				if(ch == '{')
+					appendStringInfo(s, "[ISODate(");
+				else if(ch == ',')
+					appendStringInfo(s, "),ISODate(");
+				else if(ch == '}')
+					appendStringInfo(s, ")]");
+				else
+					appendStringInfoChar(s, ch);
+			}
+			break;
+
+		case NUMERICARRAYOID:
+			//{123456789,987654321} =>
+			//[NumberDecimal("123456789"),NumberDecimal("987654321)]
+			for (valptr = outputstr; *valptr; valptr++)
+			{
+				char ch = *valptr;
+				if(ch == '{')
+					appendStringInfo(s, "[NumberDecimal(\"");
+				else if(ch == ',')
+					appendStringInfo(s, "\"),NumberDecimal(\"");
+				else if(ch == '}')
+					appendStringInfo(s, "\")]");
+				else
+					appendStringInfoChar(s, ch);
+			}
+			break;
+
+		case UUIDARRAYOID:
+			//{40e6215d-b5c6-4896-987c-f30f3678f608,3f333df6-90a4-4fda-8dd3-9485d27cee36} =>
+			//[UUID("40e6215d-b5c6-4896-987c-f30f3678f608"),UUID("3f333df6-90a4-4fda-8dd3-9485d27cee36")]
+			for (valptr = outputstr; *valptr; valptr++)
+			{
+				char ch = *valptr;
+				if(ch == '{')
+					appendStringInfo(s, "[UUID(\"");
+				else if(ch == ',')
+					appendStringInfo(s, "\"),UUID(\"");
+				else if(ch == '}')
+					appendStringInfo(s, "\")]");
+				else
+					appendStringInfoChar(s, ch);
+			}
+			break;
+
+		case CHARARRAYOID:
+		case NAMEARRAYOID:
 		case TEXTARRAYOID:
-		case 1015:
+		case BPCHARARRAYOID:
+		case VARCHARARRAYOID:
 			for (valptr = outputstr; *valptr; valptr++)
 			{
 				char ch = *valptr;
@@ -454,6 +554,7 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 				}
 			}
 			break;
+		/* Array data type */
 
 		default:
 			appendStringInfoChar(s, '\"');
