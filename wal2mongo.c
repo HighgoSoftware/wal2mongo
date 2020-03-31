@@ -429,24 +429,55 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 
 		case INT2ARRAYOID:
 		case INT4ARRAYOID:
-		case INT8ARRAYOID:
-		case FLOAT4ARRAYOID:
-		case FLOAT8ARRAYOID:
+			//{-32768,+32767} =>
+			//[NumberInt("-32768"),NumberInt("32767")]
 			for (valptr = outputstr; *valptr; valptr++)
 			{
 				char ch = *valptr;
 				if(ch == '{')
-					appendStringInfoChar(s, '[');
+					appendStringInfo(s, "[NumberInt(");
 				else if(ch == ',')
-					appendStringInfoChar(s, ',');
+					appendStringInfo(s, "),NumberInt(");
 				else if(ch == '}')
-					appendStringInfoChar(s, ']');
+					appendStringInfo(s, ")]");
 				else
-				{
-					if (SQL_STR_DOUBLE(ch, false))
-						appendStringInfoChar(s, ch);
 					appendStringInfoChar(s, ch);
-				}
+			}
+			break;
+
+		case FLOAT4ARRAYOID:
+            for (valptr = outputstr; *valptr; valptr++)
+            {
+                char ch = *valptr;
+                if(ch == '{')
+                    appendStringInfoChar(s, '[');
+                else if(ch == ',')
+                    appendStringInfoChar(s, ',');
+                else if(ch == '}')
+                    appendStringInfoChar(s, ']');
+                else
+                {
+                    if (SQL_STR_DOUBLE(ch, false))
+                        appendStringInfoChar(s, ch);
+                    appendStringInfoChar(s, ch);
+                }
+            }
+			break;
+
+		case INT8ARRAYOID:
+			//{-9223372036854775808,+9223372036854775807} =>
+			//[NumberLong("-9223372036854775808"),NumberLong("9223372036854775807")]
+			for (valptr = outputstr; *valptr; valptr++)
+			{
+				char ch = *valptr;
+				if(ch == '{')
+					appendStringInfo(s, "[NumberLong(");
+				else if(ch == ',')
+					appendStringInfo(s, "),NumberLong(");
+				else if(ch == '}')
+					appendStringInfo(s, ")]");
+				else
+					appendStringInfoChar(s, ch);
 			}
 			break;
 
@@ -489,9 +520,10 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			}
 			break;
 
+		case FLOAT8ARRAYOID:
 		case NUMERICARRAYOID:
-			//{123456789,987654321} =>
-			//[NumberDecimal("123456789"),NumberDecimal("987654321)]
+			//{1.123456789123456,9876543210.0987654321} =>
+			//[NumberDecimal("1.123456789123456"),NumberDecimal("9876543210.0987654321)]
 			for (valptr = outputstr; *valptr; valptr++)
 			{
 				char ch = *valptr;
