@@ -9,12 +9,14 @@ SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mo
 
 -- UUID
 CREATE TABLE tbl_uuid ( id serial PRIMARY KEY, a_uuid UUID NOT NULL );
+ALTER TABLE tbl_uuid REPLICA IDENTITY FULL;
 INSERT INTO tbl_uuid (a_uuid) VALUES('47deacb1-3ad0-4a0e-8254-9ad3f589c9f3') ;
 UPDATE tbl_uuid SET a_uuid = 'e7d8e462-12cc-49dc-aac2-2b5dccdabeda' WHERE id=1;
 DELETE FROM tbl_uuid WHERE id = 1;
 TRUNCATE TABLE tbl_uuid;
 -- BYTEA
 CREATE TABLE tbl_bytea ( id serial PRIMARY KEY, a_bytea bytea NOT NULL );
+ALTER TABLE tbl_bytea REPLICA IDENTITY FULL;
 INSERT INTO tbl_bytea(a_bytea) SELECT 'abc \153\154\155 \052\251\124'::bytea RETURNING a_bytea;
          a_bytea          
 --------------------------

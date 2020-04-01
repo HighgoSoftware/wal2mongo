@@ -9,6 +9,7 @@ SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mo
 
 -- create table with different numeric type
 CREATE TABLE tbl_int(id serial primary key, a smallint, b integer, c serial, d real, e bigint, f bigserial, g double precision, h decimal, i numeric);
+ALTER TABLE tbl_int REPLICA IDENTITY FULL;
 -- minumum values
 INSERT INTO tbl_int values(1, -32768, -2147483648, 1, -0.123456, -9223372036854775808, 1, -1.123456789123456, -1234567890.1234567891, -9876543210.0987654321);
 UPDATE tbl_int SET a=a+1, b=b+1, c=c+1, d=d+1, e=e+1, f=f+1, g=g+1, h=h+1, i=i+1 WHERE id=1;

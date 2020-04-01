@@ -9,6 +9,7 @@ SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mo
 
 -- create table with boolean type
 CREATE TABLE tbl_boolean (a integer primary key, b BOOLEAN);
+ALTER TABLE tbl_boolean REPLICA IDENTITY FULL;
 -- true
 INSERT INTO tbl_boolean (a, b) VALUES(1, true);
 UPDATE tbl_boolean SET b = false WHERE a = 1;

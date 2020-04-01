@@ -7,6 +7,7 @@ SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mo
 
 -- actions
 CREATE TABLE testing (a integer primary key);
+ALTER TABLE testing REPLICA IDENTITY FULL;
 INSERT INTO testing (a) VALUES(200);
 UPDATE testing SET a = 500 WHERE a = 200;
 DELETE FROM testing WHERE a = 500;

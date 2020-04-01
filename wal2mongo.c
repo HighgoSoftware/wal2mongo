@@ -605,7 +605,8 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 
 /* print the tuple 'tuple' into the StringInfo s */
 static void
-tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_nulls)
+tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_nulls,
+					Bitmapset * pkAttrs)
 {
 	int			natt;
 
@@ -637,6 +638,16 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 			continue;
 
 		typid = attr->atttypid;
+
+		/*
+		 * if pkAttrs is valid and not empty. Check if the current attribute is
+		 * a member of the pkAttrs. If not a member, continue to next attribute.
+		 */
+		if(pkAttrs && !bms_is_empty(pkAttrs) &&
+				!bms_is_member(natt + 1 - FirstLowInvalidHeapAttributeNumber,
+							   pkAttrs))
+			continue;
+
 
 		/* get Datum from tuple */
 		origval = heap_getattr(tuple, natt + 1, tupdesc, &isnull);
@@ -687,6 +698,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	Form_pg_class class_form;
 	TupleDesc	tupdesc;
 	MemoryContext old;
+	Bitmapset  *pkAttrs;
 
 	data = ctx->output_plugin_private;
 
@@ -730,6 +742,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 						   quote_qualified_identifier("db", class_form->relrewrite ?
 													  get_rel_name(class_form->relrewrite) :
 													  NameStr(class_form->relname)));
+
 	switch (change->action)
 	{
 		case REORDER_BUFFER_CHANGE_INSERT:
@@ -739,16 +752,23 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 			else
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.newtuple->tuple,
-									true);
+									true, NULL);
 			appendStringInfoString(ctx->out, " );");
 			break;
 		case REORDER_BUFFER_CHANGE_UPDATE:
 			appendStringInfoString(ctx->out, ".updateOne(");
 			if (change->data.tp.oldtuple != NULL)
 			{
+				/* For update, we looked up the primary key attribute bitmap for use
+				 * in the subsequent tuple_to_stringinfo() call so the output will only
+				 * contain primary key columns in the oldtuple instead of all columns.
+				 */
+				pkAttrs = RelationGetIndexAttrBitmap(relation,
+													 INDEX_ATTR_BITMAP_PRIMARY_KEY);
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.oldtuple->tuple,
-									true);
+									true, pkAttrs);
+				bms_free(pkAttrs);
 			}
 
 			if (change->data.tp.newtuple != NULL)
@@ -756,7 +776,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				appendStringInfoString(ctx->out, ", \{ $set: ");
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.newtuple->tuple,
-									false);
+									false, NULL);
 				appendStringInfoString(ctx->out, " }");
 			}
 			appendStringInfoString(ctx->out, " );");
@@ -768,9 +788,17 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				appendStringInfoString(ctx->out, " (no-tuple-data)");
 			/* In DELETE, only the replica identity is present; display that */
 			else
+			{
+				/* For delete, we looked up the primary key attribute bitmap for use
+				 * in the subsequent tuple_to_stringinfo() call so the output will only
+				 * contain primary key columns in the oldtuple instead of all columns.
+				 */
+				pkAttrs = RelationGetIndexAttrBitmap(relation,
+												     INDEX_ATTR_BITMAP_PRIMARY_KEY);
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.oldtuple->tuple,
-									true);
+									true, pkAttrs);
+			}
 			appendStringInfoString(ctx->out, " );");
 			break;
 		default:
