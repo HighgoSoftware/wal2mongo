@@ -798,6 +798,7 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				tuple_to_stringinfo(ctx->out, tupdesc,
 									&change->data.tp.oldtuple->tuple,
 									true, pkAttrs);
+				bms_free(pkAttrs);
 			}
 			appendStringInfoString(ctx->out, " );");
 			break;
