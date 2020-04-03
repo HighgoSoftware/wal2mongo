@@ -1,0 +1,115 @@
+\set VERBOSITY terse
+-- predictability
+SET synchronous_commit = on;
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mongo');
+ ?column? 
+----------
+ init
+(1 row)
+
+CREATE TABLE testing (a integer primary key, 
+					  j1 json, 
+					  j2 jsonb,
+					  j3 jsonpath,
+					  j4 json[],
+					  j5 jsonb[]);
+ALTER TABLE testing REPLICA IDENTITY FULL;
+-- JSON data type
+INSERT INTO testing (a, j1) VALUES(1, '{"customer": "John", "items":{"product":"beer","qty":20}}');
+INSERT INTO testing (a, j1) VALUES(2, '{"customer": "Michael", "items":[{"product":"vodka","qty":5},{"product":"whiskey","qty":10},{"product":"cooler","qty":10}]}');
+INSERT INTO testing (a, j1) VALUES(3, '{"customer": "Joe", "items":{"product":"wine","qty":20}}');
+UPDATE testing set j1='{"customer": "Michael", "items":[{"product":"vodka","qty":5},{"product":"whiskey","qty":10}]}' where a = 3;
+DELETE FROM testing where a = 1;
+-- JSONB data type
+INSERT INTO testing (a, j2) VALUES(4, '{"customer": "John", "items":{"product":"beer","qty":20}}');
+INSERT INTO testing (a, j2) VALUES(5, '{"customer": "Michael", "items":[{"product":"vodka","qty":5},{"product":"whiskey","qty":10},{"product":"cooler","qty":10}]}');
+INSERT INTO testing (a, j2) VALUES(6, '{"customer": "Joe", "items":{"product":"wine","qty":20}}');
+UPDATE testing set j2='{"customer": "Michael", "items":[{"product":"vodka","qty":5},{"product":"whiskey","qty":10}]}' where a = 3;
+DELETE FROM testing where a = 1;
+-- JSONPATH data type
+INSERT INTO testing (a, j3) VALUES(7, '$.equipment.rings[*] ? (@.track.segments > 1)');
+UPDATE testing set j3 = '$.equipment.rings[*]' where a = 7;
+DELETE from testing where a = 7;
+-- JSON[] data type
+INSERT into testing (a, j4) VALUES 
+( 
+	8,
+	array[ 
+		'{"customer": "Cary", "items":{"product":"beer","qty":1000}}',
+		'{"customer": "John", "items":{"product":"beer","qty":2000}}',
+		'{"customer": "David", "items":{"product":"beer","qty":3000}}'
+	]::json[] 
+);
+UPDATE testing set j4 = 
+array[ 
+		'{"customer": "Cary"}',
+		'{"customer": "John"}',
+		'{"customer": "David"}'
+]::json[] where a = 8;
+DELETE FROM testing where a = 8;
+-- JSONB[] data type
+INSERT into testing (a, j5) VALUES 
+( 
+	9,
+	array[ 
+		'{"customer": "Cary", "items":{"product":"beer","qty":1000}}',
+		'{"customer": "John", "items":{"product":"beer","qty":2000}}',
+		'{"customer": "David", "items":{"product":"beer","qty":3000}}'
+	]::json[] 
+);
+UPDATE testing set j5 = 
+array[ 
+		'{"customer": "Cary"}',
+		'{"customer": "John"}',
+		'{"customer": "David"}'
+]::json[] where a = 9;
+DELETE FROM testing where a = 9;
+-- get the changes
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'use_transaction', 'false', 'regress', 'true');
+                                                                                                                                                          data                                                                                                                                                           
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("1"), j1:{"customer": "John", "items":{"product":"beer","qty":20}} } );
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("2"), j1:{"customer": "Michael", "items":[{"product":"vodka","qty":5},{"product":"whiskey","qty":10},{"product":"cooler","qty":10}]} } );
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("3"), j1:{"customer": "Joe", "items":{"product":"wine","qty":20}} } );
+ use mycluster_mydb_regression_slot;
+ db.testing.updateOne( { a: NumberInt("3") }, { $set:  { a: NumberInt("3"), j1:{"customer": "Michael", "items":[{"product":"vodka","qty":5},{"product":"whiskey","qty":10}]}, j2:null, j3:null, j4:null, j5:null } } );
+ use mycluster_mydb_regression_slot;
+ db.testing.deleteOne( { a: NumberInt("1") } );
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("4"), j2:{"items": {"qty": 20, "product": "beer"}, "customer": "John"} } );
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("5"), j2:{"items": [{"qty": 5, "product": "vodka"}, {"qty": 10, "product": "whiskey"}, {"qty": 10, "product": "cooler"}], "customer": "Michael"} } );
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("6"), j2:{"items": {"qty": 20, "product": "wine"}, "customer": "Joe"} } );
+ use mycluster_mydb_regression_slot;
+ db.testing.updateOne( { a: NumberInt("3") }, { $set:  { a: NumberInt("3"), j1:{"customer": "Michael", "items":[{"product":"vodka","qty":5},{"product":"whiskey","qty":10}]}, j2:{"items": [{"qty": 5, "product": "vodka"}, {"qty": 10, "product": "whiskey"}], "customer": "Michael"}, j3:null, j4:null, j5:null } } );
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("7"), j3:"$.equipment.rings[*]?(@.track.segments > 1)" } );
+ use mycluster_mydb_regression_slot;
+ db.testing.updateOne( { a: NumberInt("7") }, { $set:  { a: NumberInt("7"), j1:null, j2:null, j3:"$.equipment.rings[*]", j4:null, j5:null } } );
+ use mycluster_mydb_regression_slot;
+ db.testing.deleteOne( { a: NumberInt("7") } );
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("8"), j4:[{"customer": "Cary", "items":{"product":"beer","qty":1000}},{"customer": "John", "items":{"product":"beer","qty":2000}},{"customer": "David", "items":{"product":"beer","qty":3000}}] } );
+ use mycluster_mydb_regression_slot;
+ db.testing.updateOne( { a: NumberInt("8") }, { $set:  { a: NumberInt("8"), j1:null, j2:null, j3:null, j4:[{"customer": "Cary"},{"customer": "John"},{"customer": "David"}], j5:null } } );
+ use mycluster_mydb_regression_slot;
+ db.testing.deleteOne( { a: NumberInt("8") } );
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("9"), j5:[{"items": {"qty": 1000, "product": "beer"}, "customer": "Cary"},{"items": {"qty": 2000, "product": "beer"}, "customer": "John"},{"items": {"qty": 3000, "product": "beer"}, "customer": "David"}] } );
+ use mycluster_mydb_regression_slot;
+ db.testing.updateOne( { a: NumberInt("9") }, { $set:  { a: NumberInt("9"), j1:null, j2:null, j3:null, j4:null, j5:[{"customer": "Cary"},{"customer": "John"},{"customer": "David"}] } } );
+ use mycluster_mydb_regression_slot;
+ db.testing.deleteOne( { a: NumberInt("9") } );
+(36 rows)
+
+DROP TABLE testing;
+SELECT 'end' FROM pg_drop_replication_slot('regression_slot');
+ ?column? 
+----------
+ end
+(1 row)
+

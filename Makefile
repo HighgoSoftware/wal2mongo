@@ -3,7 +3,7 @@
 MODULES = wal2mongo
 PGFILEDESC = "wal2mongo - a logical decoding output plugin for MongoDB"
 
-REGRESS = binary actions transaction boolean numeric binData timestamptz array
+REGRESS = binary actions transaction boolean numeric binData timestamptz array json
 
 #ISOLATION = mxact delayed_startup ondisk_startup concurrent_ddl_dml \
 	oldest_xmin snapshot_transfer

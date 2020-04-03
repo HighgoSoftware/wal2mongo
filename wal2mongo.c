@@ -587,7 +587,48 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			}
 			break;
 		/* Array data type */
+		case JSONOID:
+		case JSONBOID:
+			appendStringInfo(s, "%s", outputstr);
+			break;
+		case JSONPATHOID:
+			appendStringInfoChar(s, '\"');
+			for (valptr = outputstr; *valptr; valptr++)
+			{
+				char ch = *valptr;
 
+				if(ch != '"')
+					appendStringInfoChar(s, ch);
+			}
+			appendStringInfoChar(s, '\"');
+			break;
+		case JSONARRAYOID:
+		case JSONBARRAYOID:
+			/* For JSON arrays, we need to strip first and last curly brackets and
+			 * replace them with square brackets in order to be accepted by Mongodb
+			 */
+			outputstr = outputstr + 1;
+			outputstr[strlen(outputstr) - 1] = '\0';
+			appendStringInfoChar(s, '[');
+			for (valptr = outputstr; *valptr; valptr++)
+			{
+				char ch = *valptr;
+				if(ch == '\\' && (valptr+1) != NULL && *(valptr+1) == '"' )
+				{
+					/* replace all \" with " */
+					appendStringInfoChar(s, '"');
+				}
+				else if(ch == '"')
+				{
+					/* ignore all the double quote without backslash escape */
+				}
+				else
+				{
+					appendStringInfoChar(s, ch);
+				}
+			}
+			appendStringInfoChar(s, ']');
+			break;
 		default:
 			appendStringInfoChar(s, '\"');
 			for (valptr = outputstr; *valptr; valptr++)
