@@ -629,6 +629,25 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			}
 			appendStringInfoChar(s, ']');
 			break;
+
+		case XMLOID:
+			appendStringInfoChar(s, '\"');
+			for (valptr = outputstr; *valptr; valptr++)
+			{
+				char ch = *valptr;
+
+				if (ch == '\n')
+						continue;
+				if ((ch == '"') && (*(valptr+1) != '\0'))
+					appendStringInfoChar(s, '\\');
+
+				if (SQL_STR_DOUBLE(ch, false))
+					appendStringInfoChar(s, ch);
+				appendStringInfoChar(s, ch);
+			}
+			appendStringInfoChar(s, '\"');
+			break;
+
 		default:
 			appendStringInfoChar(s, '\"');
 			for (valptr = outputstr; *valptr; valptr++)
