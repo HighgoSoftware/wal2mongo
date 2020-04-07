@@ -419,7 +419,7 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 					appendStringInfoChar(s, ']');
 				else
 				{
-					if (strcmp(&ch, "t") == 0)
+					if (ch == 't')
 						appendStringInfoString(s, "true");
 					else
 						appendStringInfoString(s, "false");
