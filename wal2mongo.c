@@ -429,8 +429,9 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 
 		case INT2ARRAYOID:
 		case INT4ARRAYOID:
-			//{-32768,+32767} =>
-			//[NumberInt("-32768"),NumberInt("32767")]
+			/* {-32768,+32767} =>
+			 * [NumberInt("-32768"),NumberInt("32767")]
+			 */
 			for (valptr = outputstr; *valptr; valptr++)
 			{
 				char ch = *valptr;
@@ -465,8 +466,9 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			break;
 
 		case INT8ARRAYOID:
-			//{-9223372036854775808,+9223372036854775807} =>
-			//[NumberLong("-9223372036854775808"),NumberLong("9223372036854775807")]
+			/* {-9223372036854775808,+9223372036854775807} =>
+			 * [NumberLong("-9223372036854775808"),NumberLong("9223372036854775807")]
+			 */
 			for (valptr = outputstr; *valptr; valptr++)
 			{
 				char ch = *valptr;
@@ -482,8 +484,9 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			break;
 
 		case BYTEAARRAYOID:
-			//{"\\xdeadbeef","\\xc001c00f"} =>
-			//[HexData(0,"deadbeef"),HexData(0,"c001c00f")]
+			/* {"\\xdeadbeef","\\xc01dcafe"} =>
+			 * [HexData(0,"deadbeef"),HexData(0,"c01dcafe")]
+			 */
 			for (valptr = outputstr; *valptr; valptr++)
 			{
 				char ch = *valptr;
@@ -504,8 +507,9 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			break;
 
 		case TIMESTAMPTZARRAYOID:
-			//{"2020-03-30 10:18:40.12-07","2020-03-30 20:28:40.12-07"} =>
-			//[ISODate("2020-03-30 10:18:40.12-07"),ISODate("2020-03-30 20:28:40.12-07")]
+			/* {"2020-03-30 10:18:40.12-07","2020-03-30 20:28:40.12-07"} =>
+			 * [ISODate("2020-03-30 10:18:40.12-07"),ISODate("2020-03-30 20:28:40.12-07")]
+			 */
 			for (valptr = outputstr; *valptr; valptr++)
 			{
 				char ch = *valptr;
@@ -522,8 +526,9 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 
 		case FLOAT8ARRAYOID:
 		case NUMERICARRAYOID:
-			//{1.123456789123456,9876543210.0987654321} =>
-			//[NumberDecimal("1.123456789123456"),NumberDecimal("9876543210.0987654321)]
+			/* {1.123456789123456,9876543210.0987654321} =>
+			 * [NumberDecimal("1.123456789123456"),NumberDecimal("9876543210.0987654321)]
+			 */
 			for (valptr = outputstr; *valptr; valptr++)
 			{
 				char ch = *valptr;
@@ -539,8 +544,9 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			break;
 
 		case UUIDARRAYOID:
-			//{40e6215d-b5c6-4896-987c-f30f3678f608,3f333df6-90a4-4fda-8dd3-9485d27cee36} =>
-			//[UUID("40e6215d-b5c6-4896-987c-f30f3678f608"),UUID("3f333df6-90a4-4fda-8dd3-9485d27cee36")]
+			/* {40e6215d-b5c6-4896-987c-f30f3678f608,3f333df6-90a4-4fda-8dd3-9485d27cee36} =>
+			 * [UUID("40e6215d-b5c6-4896-987c-f30f3678f608"),UUID("3f333df6-90a4-4fda-8dd3-9485d27cee36")]
+			 */
 			for (valptr = outputstr; *valptr; valptr++)
 			{
 				char ch = *valptr;
