@@ -745,10 +745,24 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 		else
 		{
 			Datum		val;	/* definitely detoasted Datum */
+			char	   *result;
+			char	   *rp;
 
 			val = PointerGetDatum(PG_DETOAST_DATUM(origval));
-			print_w2m_literal(s, typid, OidOutputFunctionCall(typoutput, val));
+			if (typid == BYTEAOID || typid == BYTEAARRAYOID)
+			{
+				/* Print hex format */
+				rp = result = palloc(VARSIZE_ANY_EXHDR(val) * 2 + 2 + 1);
+				*rp++ = '\\';
+				*rp++ = 'x';
+				rp += hex_encode(VARDATA_ANY(val), VARSIZE_ANY_EXHDR(val), rp);
+				*rp = '\0';
+				print_w2m_literal(s, typid, result);
+			}
+			else
+				print_w2m_literal(s, typid, OidOutputFunctionCall(typoutput, val));
 		}
+
 	}
 	appendStringInfoString(s, " }");
 }
