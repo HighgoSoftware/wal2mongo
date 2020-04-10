@@ -16,24 +16,24 @@ DELETE FROM tbl_tstz WHERE id = 1;
 TRUNCATE TABLE tbl_tstz;
 -- peek changes according to action configuration
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'regress', 'true');
-                                                                data                                                                
-------------------------------------------------------------------------------------------------------------------------------------
+                                                              data                                                               
+---------------------------------------------------------------------------------------------------------------------------------
  use mycluster_mydb_regression_slot;
- db.tbl_tstz.insertOne( { id: NumberInt("1"), tstz: ISODate("Tue Mar 24 16:00:30 2020 PDT") } );
+ db.tbl_tstz.insertOne( { id: NumberInt("1"), tstz: ISODate("2020-03-24T16:00:30-07:00") } );
  use mycluster_mydb_regression_slot;
- db.tbl_tstz.updateOne( { id: NumberInt("1") }, { $set:  { id: NumberInt("1"), tstz: ISODate("Tue Mar 24 16:30:00 2020 PDT") } } );
+ db.tbl_tstz.updateOne( { id: NumberInt("1") }, { $set:  { id: NumberInt("1"), tstz: ISODate("2020-03-24T16:30:00-07:00") } } );
  use mycluster_mydb_regression_slot;
  db.tbl_tstz.deleteOne( { id: NumberInt("1") } );
 (6 rows)
 
 -- get changes according to action configuration
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'regress', 'true');
-                                                                data                                                                
-------------------------------------------------------------------------------------------------------------------------------------
+                                                              data                                                               
+---------------------------------------------------------------------------------------------------------------------------------
  use mycluster_mydb_regression_slot;
- db.tbl_tstz.insertOne( { id: NumberInt("1"), tstz: ISODate("Tue Mar 24 16:00:30 2020 PDT") } );
+ db.tbl_tstz.insertOne( { id: NumberInt("1"), tstz: ISODate("2020-03-24T16:00:30-07:00") } );
  use mycluster_mydb_regression_slot;
- db.tbl_tstz.updateOne( { id: NumberInt("1") }, { $set:  { id: NumberInt("1"), tstz: ISODate("Tue Mar 24 16:30:00 2020 PDT") } } );
+ db.tbl_tstz.updateOne( { id: NumberInt("1") }, { $set:  { id: NumberInt("1"), tstz: ISODate("2020-03-24T16:30:00-07:00") } } );
  use mycluster_mydb_regression_slot;
  db.tbl_tstz.deleteOne( { id: NumberInt("1") } );
 (6 rows)
