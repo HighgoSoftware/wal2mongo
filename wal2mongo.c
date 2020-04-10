@@ -23,6 +23,9 @@
 #include "utils/memutils.h"
 #include "utils/rel.h"
 #include "utils/guc.h"
+#include "utils/jsonapi.h"
+
+#define MAXDATELEN		128
 
 PG_MODULE_MAGIC;
 
@@ -740,8 +743,17 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 		else if (typisvarlena && VARATT_IS_EXTERNAL_ONDISK(origval))
 			appendStringInfoString(s, "unchanged-toast-datum");
 		else if (!typisvarlena)
-			print_w2m_literal(s, typid,
+		{
+			if (typid == TIMESTAMPTZOID || typid == TIMESTAMPTZARRAYOID)
+			{
+				char		buf[MAXDATELEN + 1];
+				JsonEncodeDateTime(buf, origval, TIMESTAMPTZOID);
+				print_w2m_literal(s, typid, buf);
+			}
+			else
+				print_w2m_literal(s, typid,
 						  OidOutputFunctionCall(typoutput, origval));
+		}
 		else
 		{
 			Datum		val;	/* definitely detoasted Datum */
