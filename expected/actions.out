@@ -93,17 +93,6 @@ SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'in
  db.testing.deleteOne( { a: NumberInt("500") } );
 (6 rows)
 
-SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'include_timestamp', 'true', 'regress', 'true');
-                                         data                                         
---------------------------------------------------------------------------------------
- use mycluster_mydb_regression_slot;
- db.testing.insertOne( { a: NumberInt("200") } );
- use mycluster_mydb_regression_slot;
- db.testing.updateOne( { a: NumberInt("200") }, { $set:  { a: NumberInt("500") } } );
- use mycluster_mydb_regression_slot;
- db.testing.deleteOne( { a: NumberInt("500") } );
-(6 rows)
-
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'skip_empty_xacts', 'true', 'regress', 'true');
                                          data                                         
 --------------------------------------------------------------------------------------

@@ -24,7 +24,6 @@ SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 're
 
 -- peek changes with several configuration parameter combinations
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'include_cluster_name', 'true', 'regress', 'true');
-SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'include_timestamp', 'true', 'regress', 'true');
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'skip_empty_xacts', 'true', 'regress', 'true');
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'only_local', 'true', 'regress', 'true');
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'use_transaction', 'true', 'regress', 'true');

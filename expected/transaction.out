@@ -67,7 +67,7 @@ SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'us
  session0regression_slot.endSession();
 (34 rows)
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'use_transaction', 'false', 'regress', 'true');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'use_transaction', 'false', 'regress', 'true', 'skip_empty_xacts', 'false');
                   data                   
 -----------------------------------------
  use mycluster_mydb_regression_slot;

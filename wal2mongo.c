@@ -44,7 +44,6 @@ typedef struct
 typedef struct
 {
 	MemoryContext context;
-	bool		include_timestamp;
 	bool		skip_empty_xacts;
 	bool		xact_wrote_changes;
 	bool		only_local;
@@ -62,6 +61,10 @@ static void pg_w2m_decode_shutdown(LogicalDecodingContext *ctx);
 
 static void pg_w2m_decode_begin_txn(LogicalDecodingContext *ctx,
 									ReorderBufferTXN *txn);
+
+static void pg_w2m_decode_begin(LogicalDecodingContext *ctx,
+								Wal2MongoData *data,
+								ReorderBufferTXN *txn);
 
 static void pg_w2m_decode_commit_txn(LogicalDecodingContext *ctx,
 								 	 ReorderBufferTXN *txn, XLogRecPtr commit_lsn);
@@ -122,7 +125,6 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 	data->context = AllocSetContextCreate(ctx->context,
 										  "wal2mongo context",
 										  ALLOCSET_DEFAULT_SIZES);
-	data->include_timestamp = false;
 	data->skip_empty_xacts = false;
 	data->only_local = false;
 	data->use_transaction = false;
@@ -143,18 +145,7 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 	{
 		DefElem *elem = lfirst(option);
 		Assert(elem->arg == NULL || IsA(elem->arg, String));
-		if (strcmp(elem->defname, "include_timestamp") == 0)
-		{
-			/* if option value is NULL then assume that value is false */
-			if (elem->arg == NULL)
-				data->include_timestamp = false;
-			else if (!parse_bool(strVal(elem->arg), &data->include_timestamp))
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
-							 strVal(elem->arg), elem->defname)));
-		}
-		else if (strcmp(elem->defname, "skip_empty_xacts") == 0)
+		if (strcmp(elem->defname, "skip_empty_xacts") == 0)
 		{
 			/* if option value is NULL then assume that value is false */
 			if (elem->arg == NULL)
@@ -303,6 +294,18 @@ pg_w2m_decode_begin_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn)
 {
 	Wal2MongoData *data = ctx->output_plugin_private;
 
+	data->xact_wrote_changes = false;
+	if (data->skip_empty_xacts)
+		return;
+
+	pg_w2m_decode_begin(ctx, data, txn);
+}
+
+static void pg_w2m_decode_begin(LogicalDecodingContext *ctx,
+								Wal2MongoData *data,
+								ReorderBufferTXN *txn)
+{
+
 	/* Skip this callback if transaction mode is not enabled */
 	if(!data->use_transaction)
 		return;
@@ -319,13 +322,16 @@ pg_w2m_decode_begin_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn)
 			data->regress == true? 0 : txn->xid, ctx->slot->data.name.data);
 	OutputPluginWrite(ctx, true);
 }
-
 /* COMMIT callback */
 static void
 pg_w2m_decode_commit_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 					 	 XLogRecPtr commit_lsn)
 {
 	Wal2MongoData *data = ctx->output_plugin_private;
+
+	/* Skip this callback if it is an empty transaction */
+	if (data->skip_empty_xacts && !data->xact_wrote_changes)
+		return;
 
 	/* Skip this callback if transaction mode is not enabled */
 	if(!data->use_transaction)
@@ -349,6 +355,10 @@ static bool
 pg_w2m_decode_filter(LogicalDecodingContext *ctx,
 				 	 RepOriginId origin_id)
 {
+	Wal2MongoData *data = ctx->output_plugin_private;
+
+	if (data->only_local && origin_id != InvalidRepOriginId)
+		return true;
 	return false;
 }
 
@@ -794,6 +804,11 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 
 	data = ctx->output_plugin_private;
 
+	/* output BEGIN if we haven't yet */
+	if (data->skip_empty_xacts && !data->xact_wrote_changes)
+	{
+		pg_w2m_decode_begin(ctx, data, txn);
+	}
 	data->xact_wrote_changes = true;
 
 	class_form = RelationGetForm(relation);
@@ -925,7 +940,7 @@ static void
 pg_w2m_decode_truncate(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				   	   int nrelations, Relation relations[], ReorderBufferChange *change)
 {
-
+	/* TODO: to be supported in future version  */
 }
 
 static void
@@ -933,7 +948,7 @@ pg_w2m_decode_message(LogicalDecodingContext *ctx,
 				  	  ReorderBufferTXN *txn, XLogRecPtr lsn, bool transactional,
 					  const char *prefix, Size sz, const char *message)
 {
-
+	/* message decoding not supported */
 }
 
 static bool
