@@ -9,7 +9,6 @@ SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mo
 
 -- actions
 CREATE TABLE testing (a integer primary key);
-ALTER TABLE testing REPLICA IDENTITY FULL;
 INSERT INTO testing (a) VALUES(200);
 UPDATE testing SET a = 500 WHERE a = 200;
 DELETE FROM testing WHERE a = 500;
@@ -136,10 +135,6 @@ SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'us
  session0regression_slot.endSession();
  session0regression_slot = db.getMongo().startSession();
  session0regression_slot.startTransaction();
- session0regression_slot.commitTransaction();
- session0regression_slot.endSession();
- session0regression_slot = db.getMongo().startSession();
- session0regression_slot.startTransaction();
  use mycluster_mydb_regression_slot;
  db.testing.insertOne( { a: NumberInt("200") } );
  session0regression_slot.commitTransaction();
@@ -160,7 +155,7 @@ SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'us
  session0regression_slot.startTransaction();
  session0regression_slot.commitTransaction();
  session0regression_slot.endSession();
-(30 rows)
+(26 rows)
 
 -- peek changes with invalid actions
 SELECT data FROM pg_logical_slot_peek_changes('regression_slot', NULL, NULL, 'actions', 'insert, xxx, delete, xxx', 'regress', 'true');

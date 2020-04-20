@@ -11,7 +11,6 @@ CREATE TABLE testing (a integer primary key,
 					  j3 jsonpath,
 					  j4 json[],
 					  j5 jsonb[]);
-ALTER TABLE testing REPLICA IDENTITY FULL;
 
 -- JSON data type
 INSERT INTO testing (a, j1) VALUES(1, '{"customer": "John", "items":{"product":"beer","qty":20}}');

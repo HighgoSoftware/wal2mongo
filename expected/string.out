@@ -9,7 +9,6 @@ SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mo
 
 -- network address
 CREATE TABLE tbl_net (id serial PRIMARY KEY, a inet, b cidr, c macaddr, d macaddr8);
-ALTER TABLE tbl_net REPLICA IDENTITY FULL;
 -- ipv4 in different format
 INSERT INTO tbl_net(a,b,c,d) VALUES('192.168.100.128/25'::inet, '192.168.100.128/25'::cidr, '08:00:2b:01:02:03'::macaddr, '08:00:2b:01:02:03:04:05'::macaddr8);
 INSERT INTO tbl_net(a,b,c,d) VALUES('192.168.0.1/24'::inet, '192.168/24'::cidr, '08-00-2b-01-02-03'::macaddr, '08-00-2b-01-02-03-04-05'::macaddr8);

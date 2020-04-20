@@ -23,7 +23,7 @@
 #include "utils/memutils.h"
 #include "utils/rel.h"
 #include "utils/guc.h"
-#include "utils/jsonapi.h"
+#include "utils/json.h"
 
 #define MAXDATELEN		128
 
@@ -747,7 +747,7 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 			if (typid == TIMESTAMPTZOID || typid == TIMESTAMPTZARRAYOID)
 			{
 				char		buf[MAXDATELEN + 1];
-				JsonEncodeDateTime(buf, origval, TIMESTAMPTZOID);
+				JsonEncodeDateTime(buf, origval, TIMESTAMPTZOID, NULL);
 				print_w2m_literal(s, typid, buf);
 			}
 			else
@@ -851,9 +851,10 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 			appendStringInfoString(ctx->out, ".updateOne(");
 			if (change->data.tp.oldtuple != NULL)
 			{
-				/* For update, we looked up the primary key attribute bitmap for use
-				 * in the subsequent tuple_to_stringinfo() call so the output will only
-				 * contain primary key columns in the oldtuple instead of all columns.
+				/*
+				 * the old tuple will contain the old value of primary key if it has been changed under DEFAULT replica identity
+				 * the old tuple will contain all old values regardless if they have bee changed under FULL replica identity
+				 * either way, find the primary key columns and print them only.
 				 */
 				pkAttrs = RelationGetIndexAttrBitmap(relation,
 													 INDEX_ATTR_BITMAP_PRIMARY_KEY);
@@ -861,6 +862,22 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 									&change->data.tp.oldtuple->tuple,
 									true, pkAttrs);
 				bms_free(pkAttrs);
+			}
+			else
+			{
+				/*
+				 * the old tuple is NULL case. This means primary key has not been changed and the replica identity is not set to FULL.
+				 * we need to figure out the primary key column from new tuple
+				 */
+				if (change->data.tp.newtuple != NULL)
+				{
+					pkAttrs = RelationGetIndexAttrBitmap(relation,
+														 INDEX_ATTR_BITMAP_PRIMARY_KEY);
+					tuple_to_stringinfo(ctx->out, tupdesc,
+										&change->data.tp.newtuple->tuple,
+										true, pkAttrs);
+					bms_free(pkAttrs);
+				}
 			}
 
 			if (change->data.tp.newtuple != NULL)

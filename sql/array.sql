@@ -8,7 +8,6 @@ SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mo
 -- create table with different numeric type
 CREATE TABLE tbl_array(id serial primary key, a bool[], b bytea[], c char[], d name[], e int2[], f int4[], g text[], h varchar[], i int8[], j float4[], k float8[], l timestamptz[], m numeric[], n uuid[] );
 
-ALTER TABLE tbl_array REPLICA IDENTITY FULL;
 -- different data types for array
 INSERT INTO tbl_array (a, b, c, d, e, f, g, h, i, j, k, l, m, n) VALUES(
 ARRAY[true, false], 
