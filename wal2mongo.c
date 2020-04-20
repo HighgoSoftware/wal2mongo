@@ -23,7 +23,7 @@
 #include "utils/memutils.h"
 #include "utils/rel.h"
 #include "utils/guc.h"
-#include "utils/json.h"
+#include "utils/jsonapi.h"
 
 #define MAXDATELEN		128
 
@@ -747,7 +747,7 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 			if (typid == TIMESTAMPTZOID || typid == TIMESTAMPTZARRAYOID)
 			{
 				char		buf[MAXDATELEN + 1];
-				JsonEncodeDateTime(buf, origval, TIMESTAMPTZOID, NULL);
+				JsonEncodeDateTime(buf, origval, TIMESTAMPTZOID);
 				print_w2m_literal(s, typid, buf);
 			}
 			else
