@@ -1,0 +1,123 @@
+\set VERBOSITY terse
+-- predictability
+SET synchronous_commit = on;
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mongo');
+ ?column? 
+----------
+ init
+(1 row)
+
+CREATE TABLE testing_one_pkey (
+a smallserial PRIMARY KEY,
+b smallint,
+c int,
+d bigint,
+e int,
+f real,
+g double precision,
+h char(20),
+i varchar(30),
+j text
+);
+CREATE TABLE testing_multi_pkey (
+a smallserial,
+b smallint,
+c int,
+d bigint,
+e int,
+f real,
+g double precision,
+h char(20),
+i varchar(30),
+j text,
+PRIMARY KEY(a, b, c)
+);
+CREATE TABLE testing_no_pkey (
+a smallserial,
+b smallint,
+c int,
+d bigint,
+e int,
+f real,
+g double precision,
+h char(20),
+i varchar(30),
+j text
+);
+CREATE TABLE testing_unique (
+a smallserial,
+b smallint,
+c int,
+d bigint,
+e int,
+f real,
+g double precision,
+h char(20),
+i varchar(30),
+j text,
+UNIQUE(f, g)
+);
+INSERT INTO testing_one_pkey (b, c, d, e, f, g, h, i, j) VALUES (1, 2, 33, 555, 666.777777777, 3.33, 'testval1', 'testval2', 'testval3');
+INSERT INTO testing_multi_pkey (b, c, d, e, f, g, h, i, j) VALUES (1, 2, 33, 555, 666.777777777, 3.33, 'testval1', 'testval2', 'testval3');
+INSERT INTO testing_no_pkey (b, c, d, e, f, g, h, i, j) VALUES (1, 2, 33, 555, 666.777777777, 3.33, 'testval1', 'testval2', 'testval3');
+INSERT INTO testing_unique (b, c, d, e, f, g, h, i, j) VALUES (1, 2, 33, 555, 666.777777777, 3.33, 'testval1', 'testval2', 'testval3');
+-- non pkey change
+UPDATE testing_one_pkey SET f = 777.888888888 WHERE b = 1;
+-- pkey change
+UPDATE testing_one_pkey SET a = 14 WHERE b = 1;  
+-- non pkey change
+UPDATE testing_multi_pkey SET f = 777.888888888 WHERE b = 1;
+-- some pkeys change
+UPDATE testing_multi_pkey SET a = 14, c = 14 WHERE b = 1; 
+-- all pkeys change
+UPDATE testing_multi_pkey SET a = 15, b = 15, c = 15 WHERE b = 1; 
+-- no pkey
+UPDATE testing_no_pkey SET h = 'changed' WHERE b = 1;
+-- non unique change
+UPDATE testing_unique SET h = 'changed' WHERE b = 1;
+-- one unique val change
+UPDATE testing_unique SET f = 888.888888888 WHERE b = 1;
+-- all unique vals change
+UPDATE testing_unique SET f = 888.888888888, g = 6.66 WHERE b = 1;
+-- get changes
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'regress', 'true', 'skip_empty_xacts', 'true');
+                                                                                                                                                        data                                                                                                                                                        
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ use mycluster_mydb_regression_slot;
+ db.testing_one_pkey.insertOne( { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2"), d: NumberLong("33"), e: NumberInt("555"), f:666.7778, g: NumberDecimal("3.33"), h:"testval1            ", i:"testval2", j:"testval3" } );
+ use mycluster_mydb_regression_slot;
+ db.testing_multi_pkey.insertOne( { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2"), d: NumberLong("33"), e: NumberInt("555"), f:666.7778, g: NumberDecimal("3.33"), h:"testval1            ", i:"testval2", j:"testval3" } );
+ use mycluster_mydb_regression_slot;
+ db.testing_no_pkey.insertOne( { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2"), d: NumberLong("33"), e: NumberInt("555"), f:666.7778, g: NumberDecimal("3.33"), h:"testval1            ", i:"testval2", j:"testval3" } );
+ use mycluster_mydb_regression_slot;
+ db.testing_unique.insertOne( { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2"), d: NumberLong("33"), e: NumberInt("555"), f:666.7778, g: NumberDecimal("3.33"), h:"testval1            ", i:"testval2", j:"testval3" } );
+ use mycluster_mydb_regression_slot;
+ db.testing_one_pkey.updateOne( { a: NumberInt("1") }, { $set:  { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2"), d: NumberLong("33"), e: NumberInt("555"), f:777.8889, g: NumberDecimal("3.33"), h:"testval1            ", i:"testval2", j:"testval3" } } );
+ use mycluster_mydb_regression_slot;
+ db.testing_one_pkey.updateOne( { a: NumberInt("1") }, { $set:  { a: NumberInt("14"), b: NumberInt("1"), c: NumberInt("2"), d: NumberLong("33"), e: NumberInt("555"), f:777.8889, g: NumberDecimal("3.33"), h:"testval1            ", i:"testval2", j:"testval3" } } );
+ use mycluster_mydb_regression_slot;
+ db.testing_multi_pkey.updateOne( { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2") }, { $set:  { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2"), d: NumberLong("33"), e: NumberInt("555"), f:777.8889, g: NumberDecimal("3.33"), h:"testval1            ", i:"testval2", j:"testval3" } } );
+ use mycluster_mydb_regression_slot;
+ db.testing_multi_pkey.updateOne( { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2") }, { $set:  { a: NumberInt("14"), b: NumberInt("1"), c: NumberInt("14"), d: NumberLong("33"), e: NumberInt("555"), f:777.8889, g: NumberDecimal("3.33"), h:"testval1            ", i:"testval2", j:"testval3" } } );
+ use mycluster_mydb_regression_slot;
+ db.testing_multi_pkey.updateOne( { a: NumberInt("14"), b: NumberInt("1"), c: NumberInt("14") }, { $set:  { a: NumberInt("15"), b: NumberInt("15"), c: NumberInt("15"), d: NumberLong("33"), e: NumberInt("555"), f:777.8889, g: NumberDecimal("3.33"), h:"testval1            ", i:"testval2", j:"testval3" } } );
+ use mycluster_mydb_regression_slot;
+ db.testing_no_pkey.updateOne({ selector: "null" }, { $set:  { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2"), d: NumberLong("33"), e: NumberInt("555"), f:666.7778, g: NumberDecimal("3.33"), h:"changed             ", i:"testval2", j:"testval3" } } );
+ use mycluster_mydb_regression_slot;
+ db.testing_unique.updateOne({ selector: "null" }, { $set:  { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2"), d: NumberLong("33"), e: NumberInt("555"), f:666.7778, g: NumberDecimal("3.33"), h:"changed             ", i:"testval2", j:"testval3" } } );
+ use mycluster_mydb_regression_slot;
+ db.testing_unique.updateOne({ selector: "null" }, { $set:  { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2"), d: NumberLong("33"), e: NumberInt("555"), f:888.8889, g: NumberDecimal("3.33"), h:"changed             ", i:"testval2", j:"testval3" } } );
+ use mycluster_mydb_regression_slot;
+ db.testing_unique.updateOne({ selector: "null" }, { $set:  { a: NumberInt("1"), b: NumberInt("1"), c: NumberInt("2"), d: NumberLong("33"), e: NumberInt("555"), f:888.8889, g: NumberDecimal("6.66"), h:"changed             ", i:"testval2", j:"testval3" } } );
+(26 rows)
+
+DROP TABLE testing_unique;
+DROP TABLE testing_no_pkey;
+DROP TABLE testing_multi_pkey;
+DROP TABLE testing_one_pkey;
+SELECT 'end' FROM pg_drop_replication_slot('regression_slot');
+ ?column? 
+----------
+ end
+(1 row)
+

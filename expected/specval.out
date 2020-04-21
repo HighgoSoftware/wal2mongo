@@ -1,0 +1,42 @@
+\set VERBOSITY terse
+-- predictability
+SET synchronous_commit = on;
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mongo');
+ ?column? 
+----------
+ init
+(1 row)
+
+CREATE TABLE testing (
+	a serial PRIMARY KEY,
+	b varchar(80),
+	c bool,
+	d real
+);
+BEGIN;
+INSERT INTO testing (b, c, d) VALUES( E'valid: '' " \\ / \d \f \r \t \u447F \u967F invalid: \\g \\k end', FALSE, 123.456);
+INSERT INTO testing (b, c, d) VALUES('aaa', 't', '+inf');
+INSERT INTO testing (b, c, d) VALUES('aaa', 'f', 'nan');
+INSERT INTO testing (b, c, d) VALUES('null', NULL, '-inf');
+COMMIT;
+-- get changes
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'regress', 'true', 'skip_empty_xacts', 'true');
+                                                                data                                                                 
+-------------------------------------------------------------------------------------------------------------------------------------
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("1"), b:"valid: '' " \ / d \x0C \r          䑿 陿 invalid: \g \k end", c:false, d:123.456 } );
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("2"), b:"aaa", c:true, d:Infinity } );
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("3"), b:"aaa", c:false, d:NaN } );
+ use mycluster_mydb_regression_slot;
+ db.testing.insertOne( { a: NumberInt("4"), b:"null", d:-Infinity } );
+(8 rows)
+
+DROP TABLE testing;
+SELECT 'end' FROM pg_drop_replication_slot('regression_slot');
+ ?column? 
+----------
+ end
+(1 row)
+

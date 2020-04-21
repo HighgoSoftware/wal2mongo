@@ -888,10 +888,18 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				{
 					pkAttrs = RelationGetIndexAttrBitmap(relation,
 														 INDEX_ATTR_BITMAP_PRIMARY_KEY);
-					tuple_to_stringinfo(ctx->out, tupdesc,
-										&change->data.tp.newtuple->tuple,
-										true, pkAttrs);
-					bms_free(pkAttrs);
+					if (!pkAttrs)
+					{
+						/* old tuple is NULL and no primary key is present in newtuple: Write null */
+						appendStringInfoString(ctx->out, "{ selector: \"null\" }");
+					}
+					else
+					{
+						tuple_to_stringinfo(ctx->out, tupdesc,
+											&change->data.tp.newtuple->tuple,
+											true, pkAttrs);
+						bms_free(pkAttrs);
+					}
 				}
 			}
 
