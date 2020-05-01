@@ -9,7 +9,8 @@ To use wal2mongo logical decoding output plugin, either one of below PostgreSQL 
 ### Build, Test and Install
 `wal2mongo` is designed to support two typical ways for building PostgreSQL extension: one is for developers who want to manage `wal2mongo` source code under PostgreSQL source code tree structure; the other one is for developers or DBA who want to integrate `wal2mongo` to existing PostgreSQL binaries.
 
-#### Build under PostgreSQL Source Code Tree
+#### On a Linux-like environment
+* Build under PostgreSQL Source Code Tree
 ```
 cd /path/to/postgres/contrib/
 git clone https://github.com/HighgoSoftware/wal2mongo.git
@@ -19,7 +20,7 @@ make install
 make check
 ```
 
-#### Build against PostgreSQL Binary Install
+* Build against PostgreSQL Binary Install
 ```
 mkdir sandbox
 cd sandbox
@@ -33,6 +34,26 @@ $ export PATH=/path/to/postgres/bin:$PATH
 USE_PGXS=1 make
 USE_PGXS=1 make install
 USE_PGXS=1 make installcheck-force
+```
+
+### On Windows7, 10 and 2019 Server
+* Build under PostgreSQL Source Code Tree
+#1. following the instruction (here)[https://www.postgresql.org/docs/12/install-windows-full.html] to setup the build environment using Microsoft Windows SDK. The Visual Studio 2019 (Community)[https://visualstudio.microsoft.com/downloads/] is enough for building Postgres 12.x and wal2mongo logical decoding output plugin. After VS 2019 has been installed successfully, download (`ActivePerl 5.28`)[https://www.activestate.com/products/perl/downloads/], (`ActiveTcl 8.6`)[https://www.activestate.com/products/tcl/downloads/] and (`GnuWin32 0.6.3`)[https://sourceforge.net/projects/getgnuwin32/files/getgnuwin32/0.6.30/GetGnuWin32-0.6.3.exe/download] and install them with the default setting would be enough.
+
+#2. check the binaries path for `ActivePerl`, `ActiveTcl` and `GnuWin32` for System variables in Environment variables management panel, if not exist then add them in.
+
+#3. build and install
+
+```
+cd \path\to\postgres\contrib\
+git clone https://github.com/HighgoSoftware/wal2mongo.git
+cd \path\to\postgres\src\tools\msvc\
+build
+install \path\to\install\foler\
+```
+#4. run regress test (notes, regress test a single extension is not supported by vcregress yet)
+```
+vcregress contribcheck
 ```
 
 ### Setup and configuration
