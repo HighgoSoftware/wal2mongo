@@ -362,6 +362,43 @@ pg_w2m_decode_filter(LogicalDecodingContext *ctx,
 	return false;
 }
 
+/* Postgres data types to MongoDB data types conversion
+ * if input data has already been quoted, then use false to skip quotation
+ * if input data hasn't been quoted yet, then use true to request a quotation
+ */
+static void
+print_w2m_data_type(StringInfo s, char *outputstr, const char *type, bool quotation)
+{
+	const char *valptr;
+
+	for (valptr = outputstr; *valptr; valptr++)
+	{
+		char ch = *valptr;
+		if(ch == '{')
+		{
+			appendStringInfo(s, "[%s(", type);
+			if (quotation)
+				appendStringInfo(s, "\"");
+		}
+		else if(ch == ',')
+		{
+			if (quotation)
+				appendStringInfo(s, "\"");
+			appendStringInfo(s, "),%s(", type);
+			if (quotation)
+				appendStringInfo(s, "\"");
+		}
+		else if(ch == '}')
+		{
+			if (quotation)
+				appendStringInfo(s, "\"");
+			appendStringInfo(s, ")]");
+		}
+		else
+			appendStringInfoChar(s, ch);
+	}
+}
+
 /* PG to MG data conversion */
 static void
 print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
@@ -442,21 +479,7 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 
 		case INT2ARRAYOID:
 		case INT4ARRAYOID:
-			/* {-32768,+32767} =>
-			 * [NumberInt("-32768"),NumberInt("32767")]
-			 */
-			for (valptr = outputstr; *valptr; valptr++)
-			{
-				char ch = *valptr;
-				if(ch == '{')
-					appendStringInfo(s, "[NumberInt(");
-				else if(ch == ',')
-					appendStringInfo(s, "),NumberInt(");
-				else if(ch == '}')
-					appendStringInfo(s, ")]");
-				else
-					appendStringInfoChar(s, ch);
-			}
+			print_w2m_data_type(s, outputstr, "NumberInt", false);
 			break;
 
 		case FLOAT4ARRAYOID:
@@ -479,21 +502,7 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			break;
 
 		case INT8ARRAYOID:
-			/* {-9223372036854775808,+9223372036854775807} =>
-			 * [NumberLong("-9223372036854775808"),NumberLong("9223372036854775807")]
-			 */
-			for (valptr = outputstr; *valptr; valptr++)
-			{
-				char ch = *valptr;
-				if(ch == '{')
-					appendStringInfo(s, "[NumberLong(");
-				else if(ch == ',')
-					appendStringInfo(s, "),NumberLong(");
-				else if(ch == '}')
-					appendStringInfo(s, ")]");
-				else
-					appendStringInfoChar(s, ch);
-			}
+			print_w2m_data_type(s, outputstr, "NumberLong", false);
 			break;
 
 		case BYTEAARRAYOID:
@@ -520,58 +529,16 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			break;
 
 		case TIMESTAMPTZARRAYOID:
-			/* {"2020-03-30 10:18:40.12-07","2020-03-30 20:28:40.12-07"} =>
-			 * [ISODate("2020-03-30 10:18:40.12-07"),ISODate("2020-03-30 20:28:40.12-07")]
-			 */
-			for (valptr = outputstr; *valptr; valptr++)
-			{
-				char ch = *valptr;
-				if(ch == '{')
-					appendStringInfo(s, "[ISODate(");
-				else if(ch == ',')
-					appendStringInfo(s, "),ISODate(");
-				else if(ch == '}')
-					appendStringInfo(s, ")]");
-				else
-					appendStringInfoChar(s, ch);
-			}
+			print_w2m_data_type(s, outputstr, "ISODate", false);
 			break;
 
 		case FLOAT8ARRAYOID:
 		case NUMERICARRAYOID:
-			/* {1.123456789123456,9876543210.0987654321} =>
-			 * [NumberDecimal("1.123456789123456"),NumberDecimal("9876543210.0987654321)]
-			 */
-			for (valptr = outputstr; *valptr; valptr++)
-			{
-				char ch = *valptr;
-				if(ch == '{')
-					appendStringInfo(s, "[NumberDecimal(\"");
-				else if(ch == ',')
-					appendStringInfo(s, "\"),NumberDecimal(\"");
-				else if(ch == '}')
-					appendStringInfo(s, "\")]");
-				else
-					appendStringInfoChar(s, ch);
-			}
+			print_w2m_data_type(s, outputstr, "NumberDecimal", true);
 			break;
 
 		case UUIDARRAYOID:
-			/* {40e6215d-b5c6-4896-987c-f30f3678f608,3f333df6-90a4-4fda-8dd3-9485d27cee36} =>
-			 * [UUID("40e6215d-b5c6-4896-987c-f30f3678f608"),UUID("3f333df6-90a4-4fda-8dd3-9485d27cee36")]
-			 */
-			for (valptr = outputstr; *valptr; valptr++)
-			{
-				char ch = *valptr;
-				if(ch == '{')
-					appendStringInfo(s, "[UUID(\"");
-				else if(ch == ',')
-					appendStringInfo(s, "\"),UUID(\"");
-				else if(ch == '}')
-					appendStringInfo(s, "\")]");
-				else
-					appendStringInfoChar(s, ch);
-			}
+			print_w2m_data_type(s, outputstr, "UUID", true);
 			break;
 
 		case CHARARRAYOID:
@@ -829,6 +796,8 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	 */
 	if(data->include_cluster_name)
 	{
+		char *cluster_name = GetConfigOptionByName("cluster_name", NULL, true);
+
 		appendStringInfo(ctx->out, "use %s_%s_%s;",
 						data->regress == true ? "mycluster" : (cluster_name[0] == '\0' ? "mycluster" : cluster_name),
 						data->regress == true ? "mydb" : get_database_name(relation->rd_node.dbNode),
