@@ -20,7 +20,7 @@ make install
 make check
 ```
 
-* Build against PostgreSQL Binary Install
+* Build against PostgreSQL binaries
 ```
 mkdir sandbox
 cd sandbox
@@ -55,6 +55,41 @@ install \path\to\install\foler\
 ```
 vcregress contribcheck
 ```
+* Build against PostgreSQL binaries
+`wal2mongo` can be built in a separate project folder using Visual Studio 2019. Here is the steps:
+1. Create a `new projec`t using `Empty Project` template, and set `Project name` to `wal2mong`, for example.
+2. Right click `wal2mongo` project -> Add -> New items ..., select `C++ File` but name it as `wal2mongo.c`
+3. Paste all the c source code from github to local `wal2mongo.c` file.
+4. Add `PGDLLEXPORT` to function `_PG_init` and `_PG_output_plugin_init`, like below,
+```
+extern PGDLLEXPORT void _PG_init(void);
+extern PGDLLEXPORT void _PG_output_plugin_init(OutputPluginCallbacks* cb);
+```
+5. Right click `wal2mongo` project -> Properties, then change below settings,
+General -> Configuration Type `Dynamic Library (.dll)`
+C/C++ -> Code Generation -> Enable C++ Exceptions to `NO`
+C/C++ -> Advanced -> Compile As `Compile As C Code`
+Linker -> Manifest File -> Generate Manifest `No`
+Linker -> Input -> Additional Dependencies `postgres.lib`
+C/C++ -> General -> Additional Include Directories, depends on where PostgreSQL binaries are installed, add pathes like below in order:
+```
+C:\Users\Administrator\Downloads\pg12.2\include\server\port\win32_msvc
+C:\Users\Administrator\Downloads\pg12.2\include\server\port\win32
+C:\Users\Administrator\Downloads\pg12.2\include\server
+C:\Users\Administrator\Downloads\pg12.2\include
+```
+Linker -> General -> Additional Library Directories, again, depends on where PostgreSQL binaries are installed, add a path like below:
+```
+C:\Users\Administrator\Downloads\pg12.2\lib
+```
+6. Right click `wal2mongo1, then click `build`. If everything goes fine, then below message should show up,
+```
+1>wal2mongo.vcxproj -> C:\Users\Administrator\source\repos\wal2mongo\Debug\wal2mongo.dll
+1>Done building project "wal2mongo.vcxproj".
+========== Rebuild All: 1 succeeded, 0 failed, 0 skipped ==========
+```
+7. Manually copy `wal2mongo.dll` to the `lib` where PostgreaSQL is installed, then run below `Example` test.
+
 
 ### Setup and configuration
 Edit PostgreSQl configuration file `postgresql.conf` and make sure `wal_level` is set to `logical`, and `max_replication_slots` is set at least 1 (default settings is 10).
