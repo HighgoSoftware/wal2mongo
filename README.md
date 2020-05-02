@@ -56,7 +56,8 @@ install \path\to\install\foler\
 vcregress contribcheck
 ```
 * Build against PostgreSQL binaries
-`wal2mongo` can be built in a separate project folder using Visual Studio 2019. Here is the steps:
+
+`wal2mongo` can be built in a separate project folder using Visual Studio 2019 by following the steps below:
 1. Create a `new projec`t using `Empty Project` template, and set `Project name` to `wal2mong`, for example.
 2. Right click `wal2mongo` project -> Add -> New items ..., select `C++ File` but name it as `wal2mongo.c`
 3. Paste all the c source code from github to local `wal2mongo.c` file.
@@ -67,10 +68,15 @@ extern PGDLLEXPORT void _PG_output_plugin_init(OutputPluginCallbacks* cb);
 ```
 5. Right click `wal2mongo` project -> Properties, then change below settings,
 General -> Configuration Type `Dynamic Library (.dll)`
+
 C/C++ -> Code Generation -> Enable C++ Exceptions to `NO`
+
 C/C++ -> Advanced -> Compile As `Compile As C Code`
+
 Linker -> Manifest File -> Generate Manifest `No`
+
 Linker -> Input -> Additional Dependencies `postgres.lib`
+
 C/C++ -> General -> Additional Include Directories, depends on where PostgreSQL binaries are installed, add pathes like below in order:
 ```
 C:\Users\Administrator\Downloads\pg12.2\include\server\port\win32_msvc
