@@ -69,32 +69,32 @@ extern PGDLLEXPORT void _PG_output_plugin_init(OutputPluginCallbacks* cb);
 5. Right click `wal2mongo` project -> Properties, then change below settings,
 General -> Configuration Type `Dynamic Library (.dll)`
 
-C/C++ -> Code Generation -> Enable C++ Exceptions to `NO`
+Set C/C++ -> Code Generation -> Enable C++ Exceptions to `NO`
 
-C/C++ -> Advanced -> Compile As `Compile As C Code`
+Set C/C++ -> Advanced -> Compile As to `Compile As C Code`
 
-Linker -> Manifest File -> Generate Manifest `No`
+Set Linker -> Manifest File -> Generate Manifest to `No`
 
-Linker -> Input -> Additional Dependencies `postgres.lib`
+Add `postgres.lib` to Linker -> Input -> Additional Dependencies 
 
-C/C++ -> General -> Additional Include Directories, depends on where PostgreSQL binaries are installed, add pathes like below in order:
+Depends on where PostgreSQL binaries are installed, add below pathes in below order to C/C++ -> General -> Additional Include Directories
 ```
 C:\Users\Administrator\Downloads\pg12.2\include\server\port\win32_msvc
 C:\Users\Administrator\Downloads\pg12.2\include\server\port\win32
 C:\Users\Administrator\Downloads\pg12.2\include\server
 C:\Users\Administrator\Downloads\pg12.2\include
 ```
-Linker -> General -> Additional Library Directories, again, depends on where PostgreSQL binaries are installed, add a path like below:
+Again, depends on where PostgreSQL binaries are installed, add a path like below to Linker -> General -> Additional Library Directories
 ```
 C:\Users\Administrator\Downloads\pg12.2\lib
 ```
-6. Right click `wal2mongo1, then click `build`. If everything goes fine, then below message should show up,
+6. Right click `wal2mongo1, then click `build`. If everything goes fine, then below message should show up.
 ```
 1>wal2mongo.vcxproj -> C:\Users\Administrator\source\repos\wal2mongo\Debug\wal2mongo.dll
 1>Done building project "wal2mongo.vcxproj".
 ========== Rebuild All: 1 succeeded, 0 failed, 0 skipped ==========
 ```
-7. Manually copy `wal2mongo.dll` to the `lib` where PostgreaSQL is installed, then run below `Example` test.
+7. Manually copy `wal2mongo.dll` to the `lib` where PostgreaSQL is installed, then run test following `Examples` section.
 
 
 ### Setup and configuration
