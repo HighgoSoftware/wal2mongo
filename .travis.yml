@@ -12,6 +12,7 @@ sudo: required
 
 before_install:
   - sudo apt-get update -qq
+  - nuke_pg
 
 install:
   # remove all existing postgresql
@@ -20,6 +21,8 @@ install:
   - echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
   - sudo apt update
   - sudo pip install cpp-coveralls
+  - install_pg
+  - install_custom_pg
   - sudo apt -y install postgresql-12 postgresql-client-12 postgresql-server-dev-12
   - sudo apt-get install -y postgresql-common
   - sudo apt-get install -y bison flex libicu-dev libssl-dev git
@@ -38,7 +41,7 @@ script:
 
 after_success:
   - sudo chmod 666 *.gcda
-  - coveralls --exclude wal2mongo.c --gcov-options '\-lp'
+  - coveralls --exclude wal2mongo.c
 
 deploy:
   provider: releases
