@@ -48,5 +48,6 @@ deploy:
   file: "*.so"
   skip_cleanup: true
   on:
-    repo: idrawone/wal2mongo
+    repo: HighgoSoftware/wal2mongo
     branch: release
+    tags: true
