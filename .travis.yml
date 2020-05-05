@@ -1,0 +1,52 @@
+# run the testsuite on travis-ci.org
+---
+# run once for each of these
+env:
+  global:
+  - enable_coverage=yes
+  - PGVERSION=12
+
+language: C
+dist: bionic
+sudo: required
+
+before_install:
+  - sudo apt-get update -qq
+
+install:
+  # remove all existing postgresql
+  - sudo rm -rf /etc/postgresql /var/lib/postgresql
+  - wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+  - echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
+  - sudo apt update
+  - sudo pip install cpp-coveralls
+  - sudo apt -y install postgresql-12 postgresql-client-12 postgresql-server-dev-12
+  - sudo apt-get install -y postgresql-common
+  - sudo apt-get install -y bison flex libicu-dev libssl-dev git
+  - sudo -u postgres createuser --superuser $USER
+  - sudo sed -i 's/#wal_level = replica/wal_level = logical/g' /etc/postgresql/12/main/postgresql.conf
+  - sudo service postgresql@12-main restart
+  - git clone https://github.com/idrawone/wal2mongo.git
+
+script:
+  - cd wal2mongo
+  - export PATH=/usr/lib/postgresql/12/bin:$PATH
+  - USE_PGXS=1 make
+  - sudo USE_PGXS=1 make install
+  - USE_PGXS=1 make installcheck-force
+  - if test -s regression.diffs; then cat regression.diffs; fi
+
+after_success:
+  - sudo chmod 666 *.gcda
+  - coveralls --exclude wal2mongo.c --gcov-options '\-lp'
+
+deploy:
+  provider: releases
+  api_key: 
+    secure: "Cikugg6yUXIyHoRYN+oLzSbRNyJ5N7JR1IYkJjgBS2ZogqxMHhZszdYCTI7FyfdzzUA3qJLiARuYpOjtk/OxzZ1b4c1+kk4miwjeNEfSZFhEUfhPq9sAD+gBq/akCQhFUWf5OQiA/DQBivL0sVIxmHc8oE9YpMMKPze2WQZvQO/g6fctzkP2eKVA2/Mq+JO4uU/VCm0PTNKNSEnO54j+riKf3qsElOzJ9GX5kWl3gOV4UQoAn+GzvH7SwzB5iex3FXEtSPuW5d80LmtOb5vJB3YJH9Yk49DMhER5W6BBgcYC/BNgfpHjSeR5fCDV4pfmfkSLD6mV2Rsy2ke8NQDFeVXbr8SZtMsEAfdTb7M8ima+CtjoawBe/SwNxEA5QuhpuQGeAvfSJzAMU+dGvvajtC1dU6GehWvBcdbxiU7VcWjItfCrV9BVh3zCdo+1keAkpO078eeb5C8qiqK4yiJ6GN1S7jIx9Y6I9VeNLjOqIRuxjt4dqmT7LBNsksA1SGddvt5jzQXjGzV34P26b31aba0Xf0eCPqpMEcv28O7vB2wBB05TC+yjgUWBUrWvVz3sDcTrhBFxlZwQc2li37brIx5bHB4lG2SG8KoUatujYUuNP2mifJaW5lXv9ibIefPac+SNjG4A+lW7x35/vvVcwcOoFK9fgZav+Q8JbzbrPH8="
+  file_glob: true
+  file: "*.so"
+  skip_cleanup: true
+  on:
+    repo: idrawone/wal2mongo
+    branch: release

@@ -9,7 +9,6 @@ SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mo
 
 -- xml data
 CREATE TABLE tbl_xml (id serial primary key, a xml);
-ALTER TABLE tbl_xml REPLICA IDENTITY FULL;
 -- insert data simple SQL way
 INSERT INTO tbl_xml(a) VALUES('<foo> xml-data </foo>'::xml);
 -- using XMLPARSE and DOCUMENT syntaxes
