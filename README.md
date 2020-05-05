@@ -1,8 +1,7 @@
 ![License](https://img.shields.io/github/license/HighgoSoftware/wal2mongo)
 ![Build](https://travis-ci.com/HighgoSoftware/wal2mongo.svg?branch=release)
 ![Coverage](https://img.shields.io/coveralls/github/HighgoSoftware/wal2mongo)
-[![Release](https://img.shields.io/github/v/release/HighgoSoftware/wal2mongo)](https://github.com/HighgoSoftware/wal2mongo/releases)
-
+[![Release](https://img.shields.io/github/v/tag/HighgoSoftware/wal2mongo?label=Release)](https://github.com/HighgoSoftware/wal2mongo/releases)
 
 ### Introduction 
 `wal2mongo` is a PostgreSQL logical decoding output plugin designed to make the logical replication easier from `PostgreSQL` to `MongoDB` by formating the output to a JSON-like format accepted by `mongo`.
