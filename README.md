@@ -1,6 +1,5 @@
 ![License](https://img.shields.io/github/license/HighgoSoftware/wal2mongo)
 ![Build](https://travis-ci.com/HighgoSoftware/wal2mongo.svg?branch=release)
-![Coverage](https://img.shields.io/coveralls/github/HighgoSoftware/wal2mongo)
 [![Release](https://img.shields.io/github/v/tag/HighgoSoftware/wal2mongo?label=Release)](https://github.com/HighgoSoftware/wal2mongo/releases)
 
 ### Introduction 
