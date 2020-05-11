@@ -738,7 +738,7 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 			char	   *rp;
 
 			val = PointerGetDatum(PG_DETOAST_DATUM(origval));
-			if (typid == BYTEAOID || typid == BYTEAARRAYOID)
+			if (typid == BYTEAOID )
 			{
 				/* Print hex format */
 				rp = result = palloc(VARSIZE_ANY_EXHDR(val) * 2 + 2 + 1);
