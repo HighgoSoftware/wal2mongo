@@ -1,0 +1,38 @@
+\set VERBOSITY terse
+-- predictability
+SET synchronous_commit = on;
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mongo');
+ ?column? 
+----------
+ init
+(1 row)
+
+CREATE TABLE testing (
+	a serial PRIMARY KEY,
+	b varchar(80),
+	c bool,
+	d real
+);
+BEGIN;
+INSERT INTO testing (b, c, d) VALUES( E'valid: '' " \\ / \d \f \r \t \u447F \u967F invalid: \\g \\k end', FALSE, 123.456);
+ERROR:  Unicode escape values cannot be used for code point values above 007F when the server encoding is not UTF8 at or near "E'valid: '' " \\ / \d \f \r \t \u447F" at character 39
+INSERT INTO testing (b, c, d) VALUES('aaa', 't', '+inf');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+INSERT INTO testing (b, c, d) VALUES('aaa', 'f', 'nan');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+INSERT INTO testing (b, c, d) VALUES('null', NULL, '-inf');
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+COMMIT;
+-- get changes
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'regress', 'true', 'skip_empty_xacts', 'true');
+ data 
+------
+(0 rows)
+
+DROP TABLE testing;
+SELECT 'end' FROM pg_drop_replication_slot('regression_slot');
+ ?column? 
+----------
+ end
+(1 row)
+
