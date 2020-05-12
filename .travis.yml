@@ -38,7 +38,7 @@ script:
   - if test -s regression.diffs; then cat regression.diffs; fi
 
 after_success:
-  - coveralls --exclude wal2mongo.c --gcov-options '\-lp'    
+  - coveralls --gcov-options '\-lp'
 
 deploy:
   provider: releases
