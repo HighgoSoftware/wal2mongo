@@ -6,12 +6,11 @@ SET synchronous_commit = on;
 SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2mongo');
 
 -- create table with different numeric type
-CREATE TABLE tbl_array(id serial primary key, a bool[], b bytea[], c char[], d name[], e int2[], f int4[], g text[], h varchar[], i int8[], j float4[], k float8[], l timestamptz[], m numeric[], n uuid[] );
+CREATE TABLE tbl_array(id serial primary key, a bool[], c char[], d name[], e int2[], f int4[], g text[], h varchar[], i int8[], j float4[], k float8[], l timestamptz[], m numeric[], n uuid[] );
 
 -- different data types for array
-INSERT INTO tbl_array (a, b, c, d, e, f, g, h, i, j, k, l, m, n) VALUES(
+INSERT INTO tbl_array (a, c, d, e, f, g, h, i, j, k, l, m, n) VALUES(
 ARRAY[true, false], 
-ARRAY['\xDEADBEEF'::bytea, '\xC001CAFE'::bytea], 
 ARRAY['c'::char,'h'::char], 
 ARRAY['student'::name, 'teacher'::name], 
 ARRAY['123'::int2, '456'::int2],
@@ -27,7 +26,6 @@ ARRAY['40e6215d-b5c6-4896-987c-f30f3678f608'::uuid, '3f333df6-90a4-4fda-8dd3-948
 );
 UPDATE tbl_array SET
 a=ARRAY[false, true], 
-b=ARRAY['\xC001CAFE'::bytea, '\xDEADBEEF'::bytea], 
 c=ARRAY['h'::char, 'c'::char], 
 d=ARRAY['teacher'::name, 'student'::name], 
 e=ARRAY['456'::int2, '123'::int2],

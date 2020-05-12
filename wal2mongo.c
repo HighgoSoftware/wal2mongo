@@ -505,29 +505,6 @@ print_w2m_literal(StringInfo s, Oid typid, char *outputstr)
 			print_w2m_data_type(s, outputstr, "NumberLong", false);
 			break;
 
-		case BYTEAARRAYOID:
-			/* {"\\xdeadbeef","\\xc01dcafe"} =>
-			 * [HexData(0,"deadbeef"),HexData(0,"c01dcafe")]
-			 */
-			for (valptr = outputstr; *valptr; valptr++)
-			{
-				char ch = *valptr;
-				if(ch == '{')
-					appendStringInfo(s, "[HexData(0,");
-				else if(ch == ',')
-					appendStringInfo(s, "),HexData(0,");
-				else if(ch == '}')
-					appendStringInfo(s, ")]");
-				else
-				{
-					if(ch == '\\')
-						valptr+=2;
-					else
-						appendStringInfoChar(s, ch);
-				}
-			}
-			break;
-
 		case TIMESTAMPTZARRAYOID:
 			print_w2m_data_type(s, outputstr, "ISODate", false);
 			break;
