@@ -35,7 +35,7 @@ script:
   - USE_PGXS=1 make
   - sudo USE_PGXS=1 make install
   - USE_PGXS=1 make installcheck-force
-  - if test -s regression.diffs; then cat regression.diffs; fi
+  - if test -s regression.diffs; then cat regression.diffs; cat results/string.out; cat expected/string.out; fi
 
 after_success:
   - coveralls --gcov-options '\-lp'
