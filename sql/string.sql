@@ -44,7 +44,7 @@ INSERT INTO tbl_geo(a,b,c,d,e,f,g,h) VALUES('(1,1)'::point, '[(1,1),(2,2)]'::lin
 
 UPDATE tbl_geo SET a='11,11'::point, b='((11,11),(12,12))'::line, c='((13,13), (14,14))'::lseg, d='(11,11),(12,12)'::box, e='(11,11),(12,12),(13,13)'::path, f='(11,11,12,12,13,13)'::path, g='(11,11),(12,12),(13,13),(14,14)'::polygon, h='((11,11),15)'::circle WHERE id=1;
 
-INSERT INTO tbl_geo(a,b,c,d,e,f,g,h) VALUES('(1,1)'::point, '(1,1),(2,2)'::line, '(3,3), (4,4)'::lseg, '1,1,2,2'::box, '1,1,2,2,3,3'::path, '1,1,2,2,3,3'::path, '(1,1,2,2,3,3,4,4)'::polygon, '(1,1), 5'::circle);
+INSERT INTO tbl_geo(a,b,c,d,e,f,g,h) VALUES('(1,1)'::point, '(1,1),(2,2)'::line, '(3,3), (4,4)'::lseg, '1,1,2,2'::box, '1,1,2,2,3,3'::path, '1,1,2,2,3,3'::path, '(1,1,2,2,3,3,4,4)'::polygon, '1,1,5'::circle);
 
 UPDATE tbl_geo SET a='21,21'::point, b='21,21,22,22'::line, c='23,23, 24,24'::lseg, d='21,21,22,22'::box, e='(21,21,22,22,23,23)'::path, f='21,21,22,22,23,23'::path, g='21,21,22,22,23,23,24,24'::polygon, h='21,21,25'::circle WHERE id=2;
 
