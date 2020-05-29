@@ -24,8 +24,8 @@
 #include "utils/rel.h"
 #include "utils/guc.h"
 #include "utils/jsonapi.h"
+#include "utils/datetime.h"
 
-#define MAXDATELEN		128
 
 PG_MODULE_MAGIC;
 
@@ -264,7 +264,7 @@ pg_w2m_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt,
 				}
 
 				pfree(rawstr);
-				list_free(selected_actions);
+				list_free_deep(selected_actions);
 			}
 		}
 		else
@@ -322,6 +322,7 @@ static void pg_w2m_decode_begin(LogicalDecodingContext *ctx,
 			data->regress == true? 0 : txn->xid, ctx->slot->data.name.data);
 	OutputPluginWrite(ctx, true);
 }
+
 /* COMMIT callback */
 static void
 pg_w2m_decode_commit_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
@@ -895,6 +896,7 @@ pg_w2m_decode_truncate(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				   	   int nrelations, Relation relations[], ReorderBufferChange *change)
 {
 	/* TODO: to be supported in future version  */
+	elog(DEBUG1, "TRUNCATE replication is not supported\n");
 }
 
 static void
@@ -903,6 +905,7 @@ pg_w2m_decode_message(LogicalDecodingContext *ctx,
 					  const char *prefix, Size sz, const char *message)
 {
 	/* message decoding not supported */
+	elog(DEBUG1, "message decoding is not supported\n");
 }
 
 static bool
