@@ -23,7 +23,11 @@
 #include "utils/memutils.h"
 #include "utils/rel.h"
 #include "utils/guc.h"
+#if PG_VERSION_NUM >= 130000
+#include "common/jsonapi.h"
+#else
 #include "utils/jsonapi.h"
+#endif
 #include "utils/datetime.h"
 
 
