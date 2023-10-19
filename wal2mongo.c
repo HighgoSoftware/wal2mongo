@@ -23,9 +23,10 @@
 #include "utils/memutils.h"
 #include "utils/rel.h"
 #include "utils/guc.h"
-#include "utils/jsonapi.h"
+#include "common/jsonapi.h"
 #include "utils/datetime.h"
-
+#include "utils/json.h"
+#include "miscadmin.h"
 
 PG_MODULE_MAGIC;
 
@@ -702,7 +703,7 @@ tuple_to_stringinfo(StringInfo s, TupleDesc tupdesc, HeapTuple tuple, bool skip_
 			if (typid == TIMESTAMPTZOID || typid == TIMESTAMPTZARRAYOID)
 			{
 				char		buf[MAXDATELEN + 1];
-				JsonEncodeDateTime(buf, origval, TIMESTAMPTZOID);
+				JsonEncodeDateTime(buf, origval, TIMESTAMPTZOID, NULL);
 				print_w2m_literal(s, typid, buf);
 			}
 			else
@@ -778,14 +779,14 @@ pg_w2m_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 
 		appendStringInfo(ctx->out, "use %s_%s_%s;",
 						data->regress == true ? "mycluster" : (cluster_name[0] == '\0' ? "mycluster" : cluster_name),
-						data->regress == true ? "mydb" : get_database_name(relation->rd_node.dbNode),
+						data->regress == true ? "mydb" : get_database_name(MyDatabaseId),
 						ctx->slot->data.name.data[0] == '\0' ? "myslot" :
 								ctx->slot->data.name.data);
 	}
 	else
 	{
 		appendStringInfo(ctx->out, "use %s_%s;",
-						data->regress == true ? "mydb" : get_database_name(relation->rd_node.dbNode),
+						data->regress == true ? "mydb" : get_database_name(MyDatabaseId),
 						ctx->slot->data.name.data[0] == '\0' ? "myslot" :
 								ctx->slot->data.name.data);
 	}
